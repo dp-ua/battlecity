@@ -46,6 +46,10 @@ public class Board extends AbstractBoard<Elements> {
         return size - 1 - y;
     }
 
+    public boolean isBarrierAt(Point point){
+        return isBarrierAt(point.getX(),point.getY());
+    }
+
     public boolean isBarrierAt(int x, int y) {
         if (isOutOfField(x, y)) {
             return true;
