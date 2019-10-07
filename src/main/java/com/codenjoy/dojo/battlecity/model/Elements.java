@@ -24,6 +24,7 @@ package com.codenjoy.dojo.battlecity.model;
 
 
 import com.codenjoy.dojo.services.printer.CharElements;
+import lombok.Getter;
 
 import java.util.Arrays;
 import java.util.Collection;
@@ -77,6 +78,7 @@ public enum Elements implements CharElements {
     AI_TANK_LEFT('«');
 
     public final char ch;
+    @Getter
     int power;
 
     private static List<Elements> result = null;

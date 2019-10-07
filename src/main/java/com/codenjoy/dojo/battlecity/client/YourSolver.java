@@ -41,6 +41,25 @@ public class YourSolver implements Solver<Board> {
     private Board board;
 
 
+    Set<Point> getDangerousPoints() {
+        Set<Point> result = new HashSet<>();
+        List<Point> bullets = board.getBullets();
+        for (Point p : bullets) {
+            Set<Point> pointAround = getPointAround(p);
+            result.addAll(pointAround);
+
+        }
+        List<Point> enemies = board.getEnemies();
+        for (Point p : enemies) {
+            Direction direction = getDirection(p);
+            if (direction != null) {
+                p.change(direction);
+                result.add(p);
+            }
+        }
+        return result;
+    }
+
     Set<Point> getPointAround(Point point) {
         Direction direction = Direction.UP;
         Set<Point> result = new HashSet<>();
@@ -72,7 +91,7 @@ public class YourSolver implements Solver<Board> {
         int biasY = from.getY() - to.getY();
         Direction directionByBiasX = getDirectionByBiasX(biasX);
         Direction directionByBiasY = getDirectionByBiasY(biasY);
-        if (Math.abs(biasX) > Math.abs(biasY)) {
+        if (Math.abs(biasX) < Math.abs(biasY)) {
             if (directionByBiasX != null) result.add(directionByBiasX);
             if (directionByBiasY != null) result.add(directionByBiasY);
         } else {
@@ -83,6 +102,8 @@ public class YourSolver implements Solver<Board> {
     }
 
     boolean canIStepToPoint(Point point) {
+        Set<Point> dangerousPoints = getDangerousPoints();
+        if (dangerousPoints.contains(point)) return false;
         if (board.isBarrierAt(point)) return false;
         if (board.getBullets().contains(point)) return false;
 //        if (board.getEnemies().contains(point)) return false;
@@ -111,19 +132,12 @@ public class YourSolver implements Solver<Board> {
     }
 
 
-    Direction getMyDirection() {
-        Elements at = board.getAt(board.getMe());
-        switch (at) {
-            case TANK_UP:
-                return Direction.UP;
-            case TANK_DOWN:
-                return Direction.DOWN;
-            case TANK_RIGHT:
-                return Direction.RIGHT;
-            case TANK_LEFT:
-                return Direction.LEFT;
-        }
-        return null;
+    Direction getDirection(Point point) {
+        Elements at = board.getAt(point);
+        int i = at.name().lastIndexOf("_");
+        if (i == -1) return null;
+        String direction = at.name().substring(i + 1);
+        return Direction.valueOf(direction);
     }
 
     List<Direction> getDirectionsWhereISeeEnemies(Point point) {
@@ -151,7 +165,6 @@ public class YourSolver implements Solver<Board> {
         System.out.println("Closest target: " + getClosestPoint(board.getEnemies(), me));
         Set<Point> freePointsForMove = getFreePointsForMove(me);
 
-        Direction myDirection = getMyDirection();
         List<Direction> directionsWhereISeeEnemies = getDirectionsWhereISeeEnemies(me);
         System.out.println("I see:" + Arrays.toString(directionsWhereISeeEnemies.toArray()));
 
