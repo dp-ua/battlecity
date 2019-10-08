@@ -50,29 +50,7 @@ public class SolverTest {
 
     @Test
     public void should() {
-        asertAI("☼☼☼☼☼☼☼" +
-                "☼     ☼" +
-                "☼     ☼" +
-                "☼     ☼" +
-                "☼ ▲   ☼" +
-                "☼     ☼" +
-                "☼☼☼☼☼☼☼", Direction.UP);
 
-        asertAI("☼☼☼☼☼☼☼" +
-                "☼     ☼" +
-                "☼     ☼" +
-                "☼ ▲   ☼" +
-                "☼     ☼" +
-                "☼     ☼" +
-                "☼☼☼☼☼☼☼", Direction.UP);
-
-        asertAI("☼☼☼☼☼☼☼" +
-                "☼ ▲   ☼" +
-                "☼     ☼" +
-                "☼     ☼" +
-                "☼     ☼" +
-                "☼     ☼" +
-                "☼☼☼☼☼☼☼", Direction.UP);
     }
 
     private void asertAI(String board, Direction expected) {

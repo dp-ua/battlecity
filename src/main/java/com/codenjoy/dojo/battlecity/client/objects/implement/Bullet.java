@@ -23,17 +23,18 @@ package com.codenjoy.dojo.battlecity.client.objects.implement;
  */
 
 import com.codenjoy.dojo.battlecity.client.objects.Basic;
-import com.codenjoy.dojo.battlecity.client.objects.action.Destroy;
+import com.codenjoy.dojo.battlecity.client.objects.action.Attack;
+import com.codenjoy.dojo.battlecity.client.objects.action.Death;
 import com.codenjoy.dojo.battlecity.client.objects.action.Step;
 import com.codenjoy.dojo.services.Point;
 
-public class Wall extends Basic implements Destroy, Step {
-    public Wall(Point point) {
+public class Bullet extends Basic implements Death {
+    public Bullet(Point point) {
         super(point);
     }
 
     @Override
     public String toString() {
-        return "Wall{" +getPoint()+"}";
+        return "Bullet{" +getPoint()+"}";
     }
 }
