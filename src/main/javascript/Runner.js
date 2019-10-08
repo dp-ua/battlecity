@@ -22,6 +22,9 @@
 var util = require('util');
 var WSocket = require('ws');
 
+//function printBoardOnTextArea(){}
+//function printLogOnTextArea(){}
+
 var log = function(string) {
     console.log(string);
     if (!!printBoardOnTextArea) {
@@ -51,11 +54,13 @@ var processBoard = function(boardString) {
 
     log(logMessage);
 
+
     return answer;
 };
 
 // you can get this code after registration on the server with your email
-var url = "http://codenjoy.com:80/codenjoy-contest/board/player/3edq63tw0bq4w4iem7nb?code=1234567890123456789";
+var url = "http://codenjoy.com/codenjoy-contest/board/player/nj3p5h4t9uzgr0junj52?code=6551112659237526156";
+//http://codenjoy.com:80/codenjoy-contest/board/player/3edq63tw0bq4w4iem7nb?code=1234567890123456789";
 
 url = url.replace("http", "ws");
 url = url.replace("board/player/", "ws?user=");
@@ -491,7 +496,7 @@ var DirectionSolver = function(board){
 
             // TODO your code here
 
-            return "ACT";
+            return "";
         }
     };
 };

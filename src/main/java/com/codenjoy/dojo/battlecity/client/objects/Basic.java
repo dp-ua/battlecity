@@ -51,7 +51,7 @@ public class Basic {
     }
 
     public int getExtraMove() {
-        return power == -1 ? 1 : power*4;
+        return power == -1 ? 1 : power*5;
     }
 
     @Override

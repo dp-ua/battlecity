@@ -91,6 +91,7 @@ public class YourSolver implements Solver<Board> {
     private Direction getWayToClosestTarget(List<Point> targets, Point point) {
         Direction direction = STOP;
         int moves = Integer.MAX_VALUE;
+        Basic finalPoint = null;
         Map<Basic, Pair<Direction, Integer>> waysToAllAccessiblePoints = boardState.getWaysToAllAccessiblePoints(point);
         for (Point p : targets) {
             Basic basicByPoint = boardState.getBasicByPoint(p);
@@ -100,10 +101,13 @@ public class YourSolver implements Solver<Board> {
                 if (movesToPoint < moves) {
                     direction = directionIntegerPair.getKey();
                     moves = movesToPoint;
+                    finalPoint = basicByPoint;
                 }
             }
         }
-
+        if (finalPoint != null) {
+            System.out.println("I go to: " + finalPoint + " by: " + direction);
+        }
         return direction;
     }
 
@@ -122,6 +126,7 @@ public class YourSolver implements Solver<Board> {
         Point me = board.getMe();
         Direction wayToClosestTarget = getWayToClosestTarget(targets, me);
         String actionByDirection = getActionByDirection(wayToClosestTarget, me);
+
         return actionByDirection;
     }
 
