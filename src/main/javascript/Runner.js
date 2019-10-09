@@ -496,7 +496,9 @@ var DirectionSolver = function(board){
 
             // TODO your code here
 
-            return "";
+	    var command = document.getElementById("command");
+		if (command.length!==0) return command;
+	else             return "ACT";
         }
     };
 };
