@@ -28,7 +28,24 @@
 	<body>
 		<textarea id="board" style="line-height: 8px; vertical-align:top;"></textarea>		
 		<textarea id="log-area" rows="60" cols="120" style="line-height: 10px;"></textarea>		
-		<input type="checkbox" id="add-to-end">Add to end</input>
-		<input type="text" id="comand">ACT</input>
+    <input type="checkbox" id="add-to-end">Add to end</input>
+    <p>Command: <input type="text" id="dir" value="UP"/></p>
+    <p>ACTION : <input type="text" id="act" value=""/></p>
 	</body>
 </html>
+
+<script>
+  document.addEventListener('keydown', function(event) {
+  let text = event.type +
+    ' key=' + event.key +
+    ' code=' + event.code ;
+    
+    if (event.code=="Space") document.getElementById("act").value = "ACT";
+    if (event.code=="ControlLeft" || event.code=="ControlRight") document.getElementById("act").value = "";
+    if (event.code=="ArrowUp") document.getElementById("dir").value = "UP";
+    if (event.code=="ArrowRight") document.getElementById("dir").value = "RIGHT";
+    if (event.code=="ArrowDown") document.getElementById("dir").value = "DOWN";
+    if (event.code=="ArrowLeft") document.getElementById("dir").value = "LEFT";
+    if (event.code=="Delete") document.getElementById("dir").value = "";
+});
+</script>

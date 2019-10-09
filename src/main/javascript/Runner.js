@@ -496,9 +496,10 @@ var DirectionSolver = function(board){
 
             // TODO your code here
 
-	    var command = document.getElementById("command");
-		if (command.length!==0) return command;
-	else             return "ACT";
+        var dir = document.getElementById("dir");
+        var act = document.getElementById("act");
+        var result=act.value+dir.value;
+	    return result;
         }
     };
 };
