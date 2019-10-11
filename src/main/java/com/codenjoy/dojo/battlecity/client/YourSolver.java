@@ -24,6 +24,7 @@ package com.codenjoy.dojo.battlecity.client;
 
 import com.codenjoy.dojo.battlecity.client.objects.Basic;
 import com.codenjoy.dojo.battlecity.client.objects.action.Destroy;
+import com.codenjoy.dojo.battlecity.client.objects.implement.Enemy;
 import com.codenjoy.dojo.battlecity.model.Elements;
 import com.codenjoy.dojo.client.Solver;
 import com.codenjoy.dojo.client.WebSocketRunner;
@@ -42,7 +43,6 @@ import static com.codenjoy.dojo.services.Direction.STOP;
  * User: your name
  */
 public class YourSolver implements Solver<Board> {
-
     private Dice dice;
     private Board board;
     BoardState boardState = new BoardState();
@@ -121,8 +121,8 @@ public class YourSolver implements Solver<Board> {
         return result;
     }
 
-    String getAnalizeNextMove() {
-        List<Point> targets = getTargets();
+    String getAnalizeNextMove(List<Point> targets) {
+
         Point me = board.getMe();
         Direction wayToClosestTarget = getWayToClosestTarget(targets, me);
         String actionByDirection = getActionByDirection(wayToClosestTarget, me);
@@ -172,45 +172,61 @@ public class YourSolver implements Solver<Board> {
         return enemies;
     }
 
+    List<Point> getSafePointsAround(Point point) {
+        List<Point> result = new ArrayList<>();
+        for (Point p : boardState.getPointsAround(point))
+            if (!boardState.badPoints.contains(p)) {
+                Basic basicByPoint = boardState.getBasicByPoint(p);
+                if (!(basicByPoint instanceof Enemy))
+                    result.add(p);
+            }
+        return result;
+    }
+
 
     String getNextMove() {
-        String result;
+
+        String result = "";
         Point me = board.getMe();
+
         System.out.println("Closest target: " + getClosestPoint(board.getEnemies(), me));
         Set<Point> freePointsForMove = getFreePointsForMove(me);
 
         List<Direction> directionsWhereISeeEnemies = getDirectionsWhereISeeEnemies(me);
         System.out.println("I see:" + Arrays.toString(directionsWhereISeeEnemies.toArray()));
+        List<Point> targets = getTargets();
+        if (boardState.badPoints.contains(me)) {
+            System.out.println("Плохо стою. Надо валить!!!!");
+            List<Point> safePointsAround = getSafePointsAround(me);
+            if (safePointsAround.size() > 0) result = getAnalizeNextMove(targets);
+        }
 
-        result = getAnalizeNextMove();
+        result = getAnalizeNextMove(targets);
 
         try {
-            Direction direction = Direction.valueOf(result);
-            if (directionsWhereISeeEnemies.contains(direction)) return "ACT," + direction.toString();
+            Basic basicByPoint = boardState.getBasicByPoint(me);
+            Direction direction = basicByPoint.getDirection();
+            if (directionsWhereISeeEnemies.contains(direction))
+                if (result.indexOf("ACT") == -1) result += ",ACT";
+
         } catch (IllegalArgumentException e) {
         }
         return result;
 
-
-//        Point target = getClosestPoint(board.getEnemies(), me);
-//        Point closestPointToTarget = getClosestPoint(new ArrayList(Arrays.asList(freePointsForMove.toArray())), target);
-//        List<Direction> directionsFromPointToPoint = boardState.getDirectionsFromPointToPoint(me, closestPointToTarget);
-//
-//        Direction direction;
-//        if (directionsFromPointToPoint.size() > 0) direction = directionsFromPointToPoint.get(0);
-//        else direction = STOP;
-//
-//        if (directionsWhereISeeEnemies.contains(direction)) return "ACT," + direction.toString();
-//        else return direction.toString();
     }
 
     @Override
     public String get(Board board) {
+        long start = System.currentTimeMillis();
         this.board = board;
         if (board.isGameOver()) return "";
         boardState.analize(board);
 
-        return getNextMove();
+        String nextMove = getNextMove();
+        long finish = System.currentTimeMillis();
+        System.out.println("Время на анализ: " + (finish - start) + "ms");
+        System.out.println("Тик:" + boardState.getTick());
+        return nextMove;
     }
 
     public static void main(String[] args) {

@@ -25,6 +25,7 @@ package com.codenjoy.dojo.battlecity.client;
 
 import com.codenjoy.dojo.battlecity.model.Elements;
 import com.codenjoy.dojo.client.AbstractBoard;
+import com.codenjoy.dojo.services.Direction;
 import com.codenjoy.dojo.services.Point;
 import com.codenjoy.dojo.services.algs.DeikstraFindWay;
 

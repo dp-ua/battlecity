@@ -1,4 +1,4 @@
-package com.codenjoy.dojo.battlecity.client.objects.action;
+package com.codenjoy.dojo.battlecity.client.objects.implement;
 
 /*-
  * #%L
@@ -22,6 +22,31 @@ package com.codenjoy.dojo.battlecity.client.objects.action;
  * #L%
  */
 
-//this object can attack nearby points
-public interface Attack {
+import com.codenjoy.dojo.battlecity.client.objects.Basic;
+import com.codenjoy.dojo.battlecity.client.objects.action.Attack;
+import com.codenjoy.dojo.battlecity.client.objects.action.Destroy;
+import com.codenjoy.dojo.battlecity.client.objects.action.Step;
+import com.codenjoy.dojo.services.Point;
+
+import java.util.List;
+
+public class EnemyAI extends Basic implements Step, Attack,Destroy {
+    public EnemyAI(Point point) {
+        super(point);
+    }
+
+    @Override
+    public int getAttackRange() {
+        return 3;
+    }
+
+    @Override
+    public List<Point> getBadPoints() {
+        return super.getBadPoints();
+    }
+
+    @Override
+    public String toString() {
+        return "AI{" +getPoint()+"}";
+    }
 }

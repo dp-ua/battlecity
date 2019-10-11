@@ -10,12 +10,12 @@ package com.codenjoy.dojo.battlecity.client.objects;
  * it under the terms of the GNU General Public License as
  * published by the Free Software Foundation, either version 3 of the
  * License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public
  * License along with this program.  If not, see
  * <http://www.gnu.org/licenses/gpl-3.0.html>.
@@ -24,12 +24,11 @@ package com.codenjoy.dojo.battlecity.client.objects;
 
 import com.codenjoy.dojo.services.Direction;
 import com.codenjoy.dojo.services.Point;
+import com.codenjoy.dojo.services.PointImpl;
 import lombok.Getter;
 import lombok.Setter;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 
 public class Basic {
     @Getter
@@ -45,13 +44,36 @@ public class Basic {
     @Getter
     List<Basic> links;
 
+    public int getAttackRange() {
+        return 0;
+    }
+
+    public List<Point> getBadPoints() {
+        List<Point> result = new ArrayList<>();
+
+        Set<Direction> workDirections = new HashSet<>();
+
+        if (direction == Direction.STOP) {
+            Direction d = Direction.UP;
+            workDirections.addAll(Direction.onlyDirections());
+        } else workDirections.add(direction);
+        for (Direction d : workDirections) {
+            Point copy = point.copy();
+            for (int i = 0; i < getAttackRange(); i++) {
+                copy.change(d);
+                result.add(new PointImpl(copy));
+            }
+        }
+        return result;
+    }
+
     public Basic(Point point) {
         this.point = point;
         links = new ArrayList<>();
     }
 
     public int getExtraMove() {
-        return power == -1 ? 1 : power*5;
+        return power == -1 ? 1 : power * 5;
     }
 
     @Override

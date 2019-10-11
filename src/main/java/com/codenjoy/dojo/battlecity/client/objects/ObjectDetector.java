@@ -80,23 +80,40 @@ public class ObjectDetector {
                 obj = new Me(point);
                 break;
 
-            case OTHER_TANK_UP:
             case AI_TANK_UP:
+                direction = UP;
+                obj = new EnemyAI((point));
+                break;
+
+            case AI_TANK_RIGHT:
+                direction = RIGHT;
+                obj = new EnemyAI((point));
+                break;
+            case AI_TANK_DOWN:
+                direction = DOWN;
+                obj = new EnemyAI((point));
+                break;
+            case AI_TANK_LEFT:
+                direction = LEFT;
+                obj = new EnemyAI((point));
+                break;
+
+            case OTHER_TANK_UP:
                 direction = UP;
                 obj = new Enemy((point));
                 break;
             case OTHER_TANK_RIGHT:
-            case AI_TANK_RIGHT:
+
                 direction = RIGHT;
                 obj = new Enemy((point));
                 break;
             case OTHER_TANK_DOWN:
-            case AI_TANK_DOWN:
+
                 direction = DOWN;
                 obj = new Enemy((point));
                 break;
             case OTHER_TANK_LEFT:
-            case AI_TANK_LEFT:
+
                 direction = LEFT;
                 obj = new Enemy((point));
                 break;

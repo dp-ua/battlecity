@@ -10,12 +10,12 @@ package com.codenjoy.dojo.battlecity.client;
  * it under the terms of the GNU General Public License as
  * published by the Free Software Foundation, either version 3 of the
  * License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public
  * License along with this program.  If not, see
  * <http://www.gnu.org/licenses/gpl-3.0.html>.
@@ -24,20 +24,28 @@ package com.codenjoy.dojo.battlecity.client;
 
 import com.codenjoy.dojo.battlecity.client.objects.Basic;
 import com.codenjoy.dojo.battlecity.client.objects.ObjectDetector;
+import com.codenjoy.dojo.battlecity.client.objects.action.Attack;
+import com.codenjoy.dojo.battlecity.client.objects.action.Death;
 import com.codenjoy.dojo.battlecity.client.objects.action.Step;
+import com.codenjoy.dojo.battlecity.client.objects.implement.Bullet;
 import com.codenjoy.dojo.battlecity.model.Elements;
 import com.codenjoy.dojo.services.Direction;
 import com.codenjoy.dojo.services.Point;
 import com.codenjoy.dojo.services.PointImpl;
 import javafx.util.Pair;
+import lombok.Getter;
 
 import java.util.*;
 
 public class BoardState {
+    @Getter
+    int tick = 0;
     private Basic[][] newState;
     private Basic[][] oldState;
     Board board;
+    Board oldBoard;
     ObjectDetector detector = new ObjectDetector();
+    Set<Point> badPoints;
 
     private Basic[][] getState() {
         char[][] field = board.getField();
@@ -47,7 +55,14 @@ public class BoardState {
             for (int j = 0; j < field[i].length; j++) {
                 char c = field[i][j];
                 Elements at = board.getAt(i, j);
-                state[i][j] = detector.getObject(new PointImpl(i, j), Elements.valueOf(c));
+                Basic object = detector.getObject(new PointImpl(i, j), Elements.valueOf(c));
+                state[i][j] = object;
+                if (object instanceof Death) {
+                    badPoints.add(object.getPoint());
+                }
+                if (object instanceof Attack) {
+                    badPoints.addAll(object.getBadPoints());
+                }
             }
         }
         return state;
@@ -63,8 +78,31 @@ public class BoardState {
         return copy;
     }
 
-    private void bulletAnalize() {
 
+    List<Bullet> getBulletsList(Basic[][] state) {
+        List<Bullet> result = new ArrayList<>();
+        if (state == null) return result;
+        for (Basic[] i : state)
+            for (Basic obj : i)
+                try {
+                    Bullet b = (Bullet) obj;
+                    result.add(b);
+                } catch (ClassCastException e) {//ignore. It is Ok}
+                }
+        return result;
+    }
+
+    private void bulletAnalize() {
+        if (tick != 0) {
+            long start = System.currentTimeMillis();
+            List<Point> bullets = board.getBullets();
+            List<Point> oldBullets = oldBoard.getBullets();
+
+//        List<Bullet> newBullets = getBulletsList(newState);
+//        List<Bullet> oldBullets = getBulletsList(oldState);
+            long finish = System.currentTimeMillis();
+//            System.out.println("Получали пули: " + (finish - start) + "ms");
+        }
     }
 
     public List<Point> getPointsAround(Point point) {
@@ -107,11 +145,11 @@ public class BoardState {
                 Integer power = entry.getValue().getValue();
                 Direction direction = entry.getValue().getKey();
                 for (Basic link : object.getLinks()) {
-                    Direction addDirection=direction;
-                    if (direction==Direction.STOP)
+                    Direction addDirection = direction;
+                    if (direction == Direction.STOP)
                         addDirection = getDirectionsFromPointToPoint(object.getPoint(), link.getPoint()).get(0);
 
-                    temp.put(link, new Pair(addDirection,link.getExtraMove() + power));
+                    temp.put(link, new Pair(addDirection, link.getExtraMove() + power));
                 }
             }
 
@@ -142,7 +180,9 @@ public class BoardState {
             List<Point> pointsAround = getPointsAround(point);
             for (Point p : pointsAround) {
                 Basic basic = newState[p.getX()][p.getY()];
-                if (basic instanceof Step) object.getLinks().add(basic);
+
+                if (!badPoints.contains(p)) //Добавляем проверку на плохую точку для шага
+                    if (basic instanceof Step) object.getLinks().add(basic);
             }
             point = getNextPoint(point);
             if (board.isOutOfField(point.getX(), point.getY())) break;
@@ -178,10 +218,14 @@ public class BoardState {
     }
 
     public void analize(Board board) {
+        oldBoard = this.board;
         this.board = board;
+        badPoints = new HashSet<>();
         oldState = newState;
         newState = getState();
         linksAnalize();
+        bulletAnalize();
+        tick++;
     }
 
 

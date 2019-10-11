@@ -24,13 +24,16 @@ package com.codenjoy.dojo.battlecity.client.objects.implement;
 
 import com.codenjoy.dojo.battlecity.client.objects.Basic;
 import com.codenjoy.dojo.battlecity.client.objects.action.Attack;
-import com.codenjoy.dojo.battlecity.client.objects.action.Death;
-import com.codenjoy.dojo.battlecity.client.objects.action.Step;
 import com.codenjoy.dojo.services.Point;
 
-public class Bullet extends Basic implements Death {
+public class Bullet extends Basic implements Attack {
     public Bullet(Point point) {
         super(point);
+    }
+
+    @Override
+    public int getAttackRange() {
+        return 4;
     }
 
     @Override

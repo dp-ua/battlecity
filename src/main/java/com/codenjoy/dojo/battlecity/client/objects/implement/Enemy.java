@@ -34,6 +34,11 @@ public class Enemy extends Basic implements Step, Attack, Destroy {
     }
 
     @Override
+    public int getAttackRange() {
+        return 3;
+    }
+
+    @Override
     public String toString() {
         return "Enemy{" +getPoint()+"}";
     }
