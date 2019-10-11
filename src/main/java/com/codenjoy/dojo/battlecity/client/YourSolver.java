@@ -33,7 +33,6 @@ import com.codenjoy.dojo.services.Direction;
 import com.codenjoy.dojo.services.Point;
 import com.codenjoy.dojo.services.RandomDice;
 import javafx.util.Pair;
-import org.reflections.vfs.Vfs;
 
 import java.util.*;
 
@@ -46,6 +45,7 @@ public class YourSolver implements Solver<Board> {
     private Dice dice;
     private Board board;
     BoardState boardState = new BoardState();
+    public static final int SCAN_RANGE_ATTACK = 8;
 
 
     Set<Point> getDangerousPoints() {
@@ -149,19 +149,18 @@ public class YourSolver implements Solver<Board> {
 
     List<Direction> getDirectionsWhereISeeEnemies(Point point) {
         List<Direction> result = new ArrayList<>();
-        Direction direction = Direction.UP;
-        List<Point> enemies = board.getEnemies();
-        for (int i = 0; i < 4; i++) {
+        for (Direction direction : Direction.onlyDirections()) {
+            List<Point> enemies = board.getEnemies();
             Point copy = point.copy();
             copy.change(direction);
-            while (!board.isBarrierAt(copy)) {
+            int count = 0;
+            while (!board.isBarrierAt(copy) && count < SCAN_RANGE_ATTACK) {
                 if (enemies.contains(copy)) {
                     result.add(direction);
                     break;
                 }
                 copy.change(direction);
             }
-            direction = direction.clockwise();
         }
         return result;
     }
