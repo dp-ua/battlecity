@@ -22,10 +22,13 @@ package com.codenjoy.dojo.battlecity.client;
  * #L%
  */
 
+import com.codenjoy.dojo.battlecity.client.neron.Detector;
+import com.codenjoy.dojo.battlecity.client.neron.DetectorService;
 import com.codenjoy.dojo.battlecity.client.objects.Basic;
 import com.codenjoy.dojo.battlecity.client.objects.action.Destroy;
 import com.codenjoy.dojo.battlecity.client.objects.implement.Enemy;
 import com.codenjoy.dojo.battlecity.model.Elements;
+import com.codenjoy.dojo.battlecity.sqlite.DBService;
 import com.codenjoy.dojo.client.Solver;
 import com.codenjoy.dojo.client.WebSocketRunner;
 import com.codenjoy.dojo.services.Dice;
@@ -45,8 +48,26 @@ public class YourSolver implements Solver<Board> {
     private Dice dice;
     private Board board;
     BoardState boardState = new BoardState();
+    DBService dbService = new DBService();
+    DetectorService detectorService = new DetectorService();
+    Map<Integer, Pair<Point, List<Detector>>> cacheDetectors = new CacheMap<>(10);
+
     public static final int SCAN_RANGE_ATTACK = 8;
 
+
+    class CacheMap<K, V> extends LinkedHashMap<K, V> {
+        private final int capacity;
+
+        CacheMap(int capacity) {
+            super(capacity + 1, 1.1f, true);
+            this.capacity = capacity;
+        }
+
+        @Override
+        protected boolean removeEldestEntry(Map.Entry<K, V> eldest) {
+            return this.size() > capacity;
+        }
+    }
 
     Set<Point> getDangerousPoints() {
         Set<Point> result = new HashSet<>();
@@ -216,19 +237,26 @@ public class YourSolver implements Solver<Board> {
 
     @Override
     public String get(Board board) {
-        long start = System.currentTimeMillis();
         this.board = board;
-        if (board.isGameOver()) return "";
+        long start = System.currentTimeMillis();
         boardState.analize(board);
+        String result;
+        if (board.isGameOver()) {
+            System.out.println("Мертвый я :(");
+            result = "";
+        } else {
 
-        String nextMove = getNextMove();
+            result = getNextMove();
+        }
         long finish = System.currentTimeMillis();
-        System.out.println("Время на анализ: " + (finish - start) + "ms");
+
         System.out.println("Тик:" + boardState.getTick());
-        return nextMove;
+        System.out.println("Время на анализ: " + (finish - start) + "ms");
+        return result;
     }
 
     public static void main(String[] args) {
+
         WebSocketRunner.runClient(
                 // paste here board page url from browser after registration
                 "http://codenjoy.com/codenjoy-contest/board/player/nj3p5h4t9uzgr0junj52?code=6551112659237526156",
