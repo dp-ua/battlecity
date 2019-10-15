@@ -48,9 +48,9 @@ public class YourSolver implements Solver<Board> {
     private Dice dice;
     private Board board;
     BoardState boardState = new BoardState();
-    DBService dbService = new DBService();
-    DetectorService detectorService = new DetectorService();
-    Map<Integer, Pair<Point, List<Detector>>> cacheDetectors = new CacheMap<>(10);
+//    DBService dbService = new DBService();
+//    DetectorService detectorService = new DetectorService();
+//    Map<Integer, Pair<Point, List<Detector>>> cacheDetectors = new CacheMap<>(10);
 
     public static final int SCAN_RANGE_ATTACK = 8;
 
