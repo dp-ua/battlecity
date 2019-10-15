@@ -7,4 +7,3 @@ log4j.properties
 .idea
 logs
 target
-!target\battlecity.jar
