@@ -28,7 +28,7 @@ import com.codenjoy.dojo.battlecity.client.objects.action.Destroy;
 import com.codenjoy.dojo.battlecity.client.objects.action.Step;
 import com.codenjoy.dojo.services.Point;
 
-public class Enemy extends Basic implements Step, Attack, Destroy {
+public class Enemy extends Basic implements Step, Attack{
     public Enemy(Point point) {
         super(point);
     }

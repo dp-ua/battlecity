@@ -30,7 +30,7 @@ import com.codenjoy.dojo.services.Point;
 
 import java.util.List;
 
-public class EnemyAI extends Basic implements Step, Attack,Destroy {
+public class EnemyAI extends Basic implements Step, Attack {
     public EnemyAI(Point point) {
         super(point);
     }

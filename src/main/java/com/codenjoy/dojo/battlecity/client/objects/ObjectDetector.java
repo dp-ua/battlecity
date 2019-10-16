@@ -41,7 +41,7 @@ public class ObjectDetector {
                 obj = new Free(point);
                 break;
             case BATTLE_WALL:
-                power = 100;
+                power = 500;
             case CONSTRUCTION:
             case CONSTRUCTION_DESTROYED_DOWN:
             case CONSTRUCTION_DESTROYED_UP:

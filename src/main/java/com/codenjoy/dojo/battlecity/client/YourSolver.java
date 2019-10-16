@@ -22,13 +22,9 @@ package com.codenjoy.dojo.battlecity.client;
  * #L%
  */
 
-import com.codenjoy.dojo.battlecity.client.neron.Detector;
-import com.codenjoy.dojo.battlecity.client.neron.DetectorService;
 import com.codenjoy.dojo.battlecity.client.objects.Basic;
 import com.codenjoy.dojo.battlecity.client.objects.action.Destroy;
-import com.codenjoy.dojo.battlecity.client.objects.implement.Enemy;
 import com.codenjoy.dojo.battlecity.model.Elements;
-import com.codenjoy.dojo.battlecity.sqlite.DBService;
 import com.codenjoy.dojo.client.Solver;
 import com.codenjoy.dojo.client.WebSocketRunner;
 import com.codenjoy.dojo.services.Dice;
@@ -136,19 +132,16 @@ public class YourSolver implements Solver<Board> {
         String result = "";
         Basic basicByDirection = boardState.getBasicByDirection(point, direction);
         if (basicByDirection != null) {
-            if (basicByDirection instanceof Destroy) result = Direction.ACT.toString() + ",";
+//            if (basicByDirection instanceof Destroy) result = Direction.ACT.toString() + ",";
             result += direction.toString();
         }
         return result;
     }
 
-    String getAnalizeNextMove(List<Point> targets) {
-
+    Direction getDirectionForClosestTarget(List<Point> targets) {
         Point me = board.getMe();
         Direction wayToClosestTarget = getWayToClosestTarget(targets, me);
-        String actionByDirection = getActionByDirection(wayToClosestTarget, me);
-
-        return actionByDirection;
+        return wayToClosestTarget;
     }
 
 
@@ -194,42 +187,50 @@ public class YourSolver implements Solver<Board> {
 
     List<Point> getSafePointsAround(Point point) {
         List<Point> result = new ArrayList<>();
+        List<Point> enemies = board.getEnemies();
         for (Point p : boardState.getPointsAround(point))
-            if (!boardState.badPoints.contains(p)) {
-                Basic basicByPoint = boardState.getBasicByPoint(p);
-                if (!(basicByPoint instanceof Enemy))
-                    result.add(p);
-            }
+            if (!boardState.badPoints.contains(p))
+                if (!enemies.contains(p))
+                    if (!board.isBarrierAt(p))
+                        result.add(p);
         return result;
     }
 
 
     String getNextMove() {
-
         String result = "";
         Point me = board.getMe();
-
-        System.out.println("Closest target: " + getClosestPoint(board.getEnemies(), me));
-        Set<Point> freePointsForMove = getFreePointsForMove(me);
+        Basic meBasic = boardState.getBasicByPoint(me);
+        Direction myActiveDirection = meBasic.getDirection();
 
         List<Direction> directionsWhereISeeEnemies = getDirectionsWhereISeeEnemies(me);
         System.out.println("I see:" + Arrays.toString(directionsWhereISeeEnemies.toArray()));
+        System.out.println("I look: [" + myActiveDirection.toString() + "]");
+
         List<Point> targets = getTargets();
+
+
         if (boardState.badPoints.contains(me)) {
-            System.out.println("Плохо стою. Надо валить!!!!");
+            System.out.println("Плохо стою. Ищу пути отхода");
             List<Point> safePointsAround = getSafePointsAround(me);
-            if (safePointsAround.size() > 0) result = getAnalizeNextMove(targets);
+            if (safePointsAround.size() > 0) {
+                System.out.println("Отход есть. Пытаюсь уйти.");
+                targets = safePointsAround;
+            }
         }
-
-        result = getAnalizeNextMove(targets);
-
+        result = getDirectionForClosestTarget(targets).toString();
         try {
-            Basic basicByPoint = boardState.getBasicByPoint(me);
-            Direction direction = basicByPoint.getDirection();
-            if (directionsWhereISeeEnemies.contains(direction))
-                if (result.indexOf("ACT") == -1) result += ",ACT";
 
+            if (isNeedShootForDestroy(myActiveDirection.toString(), result, me)) {
+                System.out.println("Иду в стену - буду рушить");
+                result = "ACT," + result;
+            }
+            if (directionsWhereISeeEnemies.contains(myActiveDirection)) {
+                System.out.println("Вижу противника - буду стрелять");
+                if (result.indexOf("ACT") == -1) result += ",ACT";
+            }
         } catch (IllegalArgumentException e) {
+            System.out.println(e.getMessage());
         }
         return result;
 
@@ -245,7 +246,6 @@ public class YourSolver implements Solver<Board> {
             System.out.println("Мертвый я :(");
             result = "";
         } else {
-
             result = getNextMove();
         }
         long finish = System.currentTimeMillis();
@@ -253,6 +253,18 @@ public class YourSolver implements Solver<Board> {
         System.out.println("Тик:" + boardState.getTick());
         System.out.println("Время на анализ: " + (finish - start) + "ms");
         return result;
+    }
+
+    boolean isNeedShootForDestroy(String mySight, String commandForMove, Point point) {
+        Direction myDirection = Direction.valueOf(mySight);
+        if (!Direction.onlyDirections().contains(myDirection)) return false;
+        if (!mySight.equals(commandForMove)) return false;
+
+        Point copy = point.copy();
+        copy.change(myDirection);
+        if (board.isOutOfField(copy.getX(), copy.getY())) return false;
+        Basic basicByPoint = boardState.getBasicByPoint(copy);
+        return basicByPoint instanceof Destroy;
     }
 
     public static void main(String[] args) {

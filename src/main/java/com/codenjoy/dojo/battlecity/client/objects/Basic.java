@@ -31,6 +31,7 @@ import lombok.Setter;
 import java.util.*;
 
 public class Basic {
+    public static final int ACT_DELAY = 5;
     @Getter
     Point point;
 
@@ -73,7 +74,7 @@ public class Basic {
     }
 
     public int getExtraMove() {
-        return power == -1 ? 1 : power * 5;
+        return power == -1 ? 1 : power * ACT_DELAY;
     }
 
     @Override
