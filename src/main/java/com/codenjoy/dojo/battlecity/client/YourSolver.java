@@ -50,7 +50,6 @@ public class YourSolver implements Solver<Board> {
 
     public static final int SCAN_RANGE_ATTACK = 8;
 
-
     class CacheMap<K, V> extends LinkedHashMap<K, V> {
         private final int capacity;
 
@@ -64,46 +63,6 @@ public class YourSolver implements Solver<Board> {
             return this.size() > capacity;
         }
     }
-
-    Set<Point> getDangerousPoints() {
-        Set<Point> result = new HashSet<>();
-        List<Point> bullets = board.getBullets();
-        for (Point p : bullets) {
-            List<Point> pointAround = boardState.getPointsAround(p);
-            result.addAll(pointAround);
-        }
-        List<Point> enemies = board.getEnemies();
-        for (Point p : enemies) {
-            Direction direction = getDirection(p);
-            if (direction != null) {
-                p.change(direction);
-                result.add(p);
-            }
-        }
-        return result;
-    }
-
-
-    boolean canIStepToPoint(Point point) {
-        Set<Point> dangerousPoints = getDangerousPoints();
-        if (dangerousPoints.contains(point)) return false;
-        if (board.isBarrierAt(point)) return false;
-        if (board.getBullets().contains(point)) return false;
-//        if (board.getEnemies().contains(point)) return false;
-        // TODO: 10/7/2019 is dangerous point return false
-
-        return true;
-    }
-
-    Set<Point> getFreePointsForMove(Point point) {
-        Set<Point> result = new HashSet<>();
-        List<Point> pointAround = boardState.getPointsAround(point);
-        for (Point p : pointAround) {
-            if (canIStepToPoint(p)) result.add(p);
-        }
-        return result;
-    }
-
 
     private Direction getWayToClosestTarget(List<Point> targets, Point point) {
         Direction direction = STOP;
@@ -128,32 +87,7 @@ public class YourSolver implements Solver<Board> {
         return direction;
     }
 
-    private String getActionByDirection(Direction direction, Point point) {
-        String result = "";
-        Basic basicByDirection = boardState.getBasicByDirection(point, direction);
-        if (basicByDirection != null) {
-//            if (basicByDirection instanceof Destroy) result = Direction.ACT.toString() + ",";
-            result += direction.toString();
-        }
-        return result;
-    }
-
-    Direction getDirectionForClosestTarget(List<Point> targets) {
-        Point me = board.getMe();
-        Direction wayToClosestTarget = getWayToClosestTarget(targets, me);
-        return wayToClosestTarget;
-    }
-
-
-    Point getClosestPoint(List<Point> targets, Point point) {
-        if (targets.size() == 0) return point;
-        Point result = targets.get(0);
-        for (Point p : targets)
-            if (point.distance(p) < point.distance(result)) result = p;
-        return result;
-    }
-
-    Direction getDirection(Point point) {
+    Direction getDirectionOfPoint(Point point) {
         Elements at = board.getAt(point);
         int i = at.name().lastIndexOf("_");
         if (i == -1) return null;
@@ -204,11 +138,11 @@ public class YourSolver implements Solver<Board> {
         Direction myActiveDirection = meBasic.getDirection();
 
         List<Direction> directionsWhereISeeEnemies = getDirectionsWhereISeeEnemies(me);
-        System.out.println("I see:" + Arrays.toString(directionsWhereISeeEnemies.toArray()));
-        System.out.println("I look: [" + myActiveDirection.toString() + "]");
+        System.out.println("Enemies on:" + Arrays.toString(directionsWhereISeeEnemies.toArray()));
+        System.out.println("I look:[" + myActiveDirection.toString() + "]");
 
         List<Point> targets = getTargets();
-
+        Direction directionForNewMove = STOP;
 
         if (boardState.badPoints.contains(me)) {
             System.out.println("Плохо стою. Ищу пути отхода");
@@ -218,22 +152,33 @@ public class YourSolver implements Solver<Board> {
                 targets = safePointsAround;
             }
         }
-        result = getDirectionForClosestTarget(targets).toString();
-        try {
 
-            if (isNeedShootForDestroy(myActiveDirection.toString(), result, me)) {
-                System.out.println("Иду в стену - буду рушить");
-                result = "ACT," + result;
-            }
-            if (directionsWhereISeeEnemies.contains(myActiveDirection)) {
-                System.out.println("Вижу противника - буду стрелять");
-                if (result.indexOf("ACT") == -1) result += ",ACT";
-            }
-        } catch (IllegalArgumentException e) {
-            System.out.println(e.getMessage());
-        }
+        directionForNewMove = getWayToClosestTarget(targets, me);
+
+        result = (
+                isNeedToShoot(myActiveDirection, directionForNewMove, directionsWhereISeeEnemies, me) ?
+                        "ACT, " : ""
+        )
+                + directionForNewMove.toString();
+
         return result;
+    }
 
+
+
+    private boolean isNeedToShoot(Direction myActiveDirection, Direction directionForNewMove, List<Direction> directionsToTargets, Point me) {
+        if (isNeedShootToDestroy(myActiveDirection, directionForNewMove, me)) {
+            System.out.println("Иду в стену - нужно рушить");
+            return true;
+        } else if (isNeedShootToKillEnemy(directionsToTargets, myActiveDirection)) {
+            System.out.println("Вижу противника - надо стрелять");
+            return true;
+        }
+        return false;
+    }
+
+    private boolean isNeedShootToKillEnemy(List<Direction> directionsToTargets, Direction myDirection) {
+        return (directionsToTargets.contains(myDirection));
     }
 
     @Override
@@ -255,13 +200,12 @@ public class YourSolver implements Solver<Board> {
         return result;
     }
 
-    boolean isNeedShootForDestroy(String mySight, String commandForMove, Point point) {
-        Direction myDirection = Direction.valueOf(mySight);
-        if (!Direction.onlyDirections().contains(myDirection)) return false;
-        if (!mySight.equals(commandForMove)) return false;
+    boolean isNeedShootToDestroy(Direction mySightDirection, Direction directionForNewMove, Point point) {
+        if (!Direction.onlyDirections().contains(mySightDirection)) return false;
+        if (!mySightDirection.equals(directionForNewMove)) return false;
 
         Point copy = point.copy();
-        copy.change(myDirection);
+        copy.change(mySightDirection);
         if (board.isOutOfField(copy.getX(), copy.getY())) return false;
         Basic basicByPoint = boardState.getBasicByPoint(copy);
         return basicByPoint instanceof Destroy;
