@@ -44,11 +44,9 @@ public class YourSolver implements Solver<Board> {
     private Dice dice;
     private Board board;
     BoardState boardState = new BoardState();
-//    DBService dbService = new DBService();
-//    DetectorService detectorService = new DetectorService();
-//    Map<Integer, Pair<Point, List<Detector>>> cacheDetectors = new CacheMap<>(10);
 
     public static final int SCAN_RANGE_ATTACK = 8;
+    public static final int FREE_MOVES_BEHIND = 3;
 
     class CacheMap<K, V> extends LinkedHashMap<K, V> {
         private final int capacity;
@@ -113,10 +111,27 @@ public class YourSolver implements Solver<Board> {
         return result;
     }
 
-    public List<Point> getTargets() {
-        List<Point> enemies = board.getEnemies();
 
-        return enemies;
+    public List<Point> getTargets() {
+        List<Point> result = new ArrayList<>();
+        List<Point> enemies = board.getEnemies();
+        for (Point point : enemies) {
+            Basic enemy = boardState.getBasicByPoint(point);
+            Direction enemyDirection = enemy.getDirection();
+            Point copyEnemyPoint = point.copy();
+            if (Direction.onlyDirections().contains(enemyDirection))
+                for (int i = 0; i < FREE_MOVES_BEHIND; i++) {
+                    copyEnemyPoint.change(enemyDirection.inverted());
+                    if (board.getAt(copyEnemyPoint.getX(), copyEnemyPoint.getY()).equals(Elements.NONE))
+                        result.add(copyEnemyPoint.copy());
+                    else break;
+                }
+        }
+        if (result.contains(board.getMe())) return enemies;
+        else {
+            result.addAll(enemies);
+            return result;
+        }
     }
 
     List<Point> getSafePointsAround(Point point) {
@@ -155,6 +170,7 @@ public class YourSolver implements Solver<Board> {
 
         directionForNewMove = getWayToClosestTarget(targets, me);
 
+
         result = (
                 isNeedToShoot(myActiveDirection, directionForNewMove, directionsWhereISeeEnemies, me) ?
                         "ACT, " : ""
@@ -165,8 +181,8 @@ public class YourSolver implements Solver<Board> {
     }
 
 
-
-    private boolean isNeedToShoot(Direction myActiveDirection, Direction directionForNewMove, List<Direction> directionsToTargets, Point me) {
+    private boolean isNeedToShoot(Direction myActiveDirection, Direction
+            directionForNewMove, List<Direction> directionsToTargets, Point me) {
         if (isNeedShootToDestroy(myActiveDirection, directionForNewMove, me)) {
             System.out.println("Иду в стену - нужно рушить");
             return true;
