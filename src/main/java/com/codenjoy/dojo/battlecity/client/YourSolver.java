@@ -167,10 +167,7 @@ public class YourSolver implements Solver<Board> {
                 targets = safePointsAround;
             }
         }
-
         directionForNewMove = getWayToClosestTarget(targets, me);
-
-
         result = (
                 isNeedToShoot(myActiveDirection, directionForNewMove, directionsWhereISeeEnemies, me) ?
                         "ACT, " : ""
@@ -180,6 +177,16 @@ public class YourSolver implements Solver<Board> {
         return result;
     }
 
+    boolean isNeedShootToDestroy(Direction mySightDirection, Direction directionForNewMove, Point point) {
+        if (!Direction.onlyDirections().contains(mySightDirection)) return false;
+        if (!mySightDirection.equals(directionForNewMove)) return false;
+
+        Point copy = point.copy();
+        copy.change(mySightDirection);
+        if (board.isOutOfField(copy.getX(), copy.getY())) return false;
+        Basic basicByPoint = boardState.getBasicByPoint(copy);
+        return basicByPoint instanceof Destroy;
+    }
 
     private boolean isNeedToShoot(Direction myActiveDirection, Direction
             directionForNewMove, List<Direction> directionsToTargets, Point me) {
@@ -197,6 +204,19 @@ public class YourSolver implements Solver<Board> {
         return (directionsToTargets.contains(myDirection));
     }
 
+    int lastShoot=-100;
+    private String getTestMove() {
+        boolean before = true;
+        Point me = board.getMe();
+        Basic basicByPoint = boardState.getBasicByPoint(me);
+        String act=basicByPoint.getDirection().clockwise().toString();
+        if (boardState.tick-lastShoot>5) {
+            lastShoot=boardState.tick;
+            act = before ? "ACT, " + act : act+", ACT";
+        }
+        return act;
+    }
+
     @Override
     public String get(Board board) {
         this.board = board;
@@ -208,6 +228,7 @@ public class YourSolver implements Solver<Board> {
             result = "";
         } else {
             result = getNextMove();
+//            result = getTestMove();
         }
         long finish = System.currentTimeMillis();
 
@@ -216,19 +237,8 @@ public class YourSolver implements Solver<Board> {
         return result;
     }
 
-    boolean isNeedShootToDestroy(Direction mySightDirection, Direction directionForNewMove, Point point) {
-        if (!Direction.onlyDirections().contains(mySightDirection)) return false;
-        if (!mySightDirection.equals(directionForNewMove)) return false;
-
-        Point copy = point.copy();
-        copy.change(mySightDirection);
-        if (board.isOutOfField(copy.getX(), copy.getY())) return false;
-        Basic basicByPoint = boardState.getBasicByPoint(copy);
-        return basicByPoint instanceof Destroy;
-    }
 
     public static void main(String[] args) {
-
         WebSocketRunner.runClient(
                 // paste here board page url from browser after registration
                 "http://codenjoy.com/codenjoy-contest/board/player/nj3p5h4t9uzgr0junj52?code=6551112659237526156",
