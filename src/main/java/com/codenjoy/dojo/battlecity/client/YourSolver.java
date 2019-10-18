@@ -195,9 +195,10 @@ public class YourSolver implements Solver<Board> {
         boolean before = false;
         Point me = board.getMe();
         Direction direction = boardState.getBasicByPoint(me).getDirection();
-        String act = direction.clockwise().toString();
+        Direction newDirection = direction.clockwise();
+        String act = newDirection.toString();
 
-        if (boardState.tick - lastShoot > 4) {
+        if (isNeedToShoot(newDirection)) {
             lastShoot = boardState.tick;
 //            act+=",ACT," + direction.clockwise().clockwise().toString();
             act = before ? "ACT, " + act : act + ", ACT";
