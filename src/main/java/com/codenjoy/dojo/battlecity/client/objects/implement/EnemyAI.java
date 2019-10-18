@@ -26,6 +26,7 @@ import com.codenjoy.dojo.battlecity.client.objects.Basic;
 import com.codenjoy.dojo.battlecity.client.objects.action.Attack;
 import com.codenjoy.dojo.battlecity.client.objects.action.Destroy;
 import com.codenjoy.dojo.battlecity.client.objects.action.Step;
+import com.codenjoy.dojo.services.Direction;
 import com.codenjoy.dojo.services.Point;
 
 import java.util.List;
@@ -42,7 +43,12 @@ public class EnemyAI extends Basic implements Step, Attack {
 
     @Override
     public List<Point> getBadPoints() {
-        return super.getBadPoints();
+        List<Point> badPoints = super.getBadPoints();
+        Direction direction = this.getDirection();
+        Point copy = this.getPoint().copy();
+        copy.change(direction.inverted());
+        badPoints.add(copy);
+        return badPoints;
     }
 
     @Override
