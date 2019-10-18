@@ -46,7 +46,7 @@ import static com.codenjoy.dojo.services.Direction.STOP;
 public class YourSolver implements Solver<Board> {
 
     public int FREE_MOVES_BEHIND = 6;
-    public int SCAN_RANGE_ATTACK = 12;
+    public int SCAN_RANGE_ATTACK = 16;
     public int MAX_MOVES_ANALIZE = 30;
     public boolean NO_TARGET_TO_AI = true;
     public boolean IS_SIMPLE_MOD = false;
@@ -107,16 +107,20 @@ public class YourSolver implements Solver<Board> {
     List<Direction> getDirectionsWhereISeeEnemies(Point point) {
         long start = System.currentTimeMillis();
         List<Direction> result = new ArrayList<>();
+        Set<Point> enemies = new HashSet<>(board.getEnemies());
+        Set<Point> barriers = new HashSet<>(board.getBarriers());
+        barriers.addAll(board.getBullets());
+
         for (Direction direction : Direction.onlyDirections()) {
-            List<Point> enemies = board.getEnemies();
             Point copy = point.copy();
             copy.change(direction);
             int count = 0;
-            while (isNotBarried(copy) && count < SCAN_RANGE_ATTACK) {
+            while (count < SCAN_RANGE_ATTACK && !barriers.contains(copy) ) {
                 if (enemies.contains(copy)) {
                     result.add(direction);
                     break;
                 }
+                count++;
                 copy.change(direction);
             }
         }
