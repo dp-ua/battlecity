@@ -201,7 +201,7 @@ public class YourSolver implements Solver<Board> {
 
     int lastShoot = -100;
 
-    private String getTestMove() {
+    private String getSimpleMove() {
         boolean before = false;
         Point me = board.getMe();
         Direction direction = boardState.getBasicByPoint(me).getDirection();
@@ -246,7 +246,7 @@ public class YourSolver implements Solver<Board> {
             System.out.println("Мертвый я :(");
             result = "";
         } else {
-            result = IS_SIMPLE_MOD ? getTestMove() : getNextMove();
+            result = IS_SIMPLE_MOD ? getSimpleMove() : getNextMove();
         }
         long finish = System.currentTimeMillis();
         System.out.println("Тик:" + boardState.getTick());
