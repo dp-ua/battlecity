@@ -51,7 +51,7 @@ public class YourSolver implements Solver<Board> {
     public boolean NO_TARGET_TO_AI = true;
     public boolean IS_SIMPLE_MOD = false;
 
-    public int DURATION_EXCESS_STATISTIC = 100;
+    public int DURATION_EXCESS_STATISTIC = 500;
 
     StatisticHolder statisticHolder = StatisticHolder.getInstance();
     private Dice dice;
@@ -98,6 +98,12 @@ public class YourSolver implements Solver<Board> {
         return direction;
     }
 
+    boolean isNotBarried(Point point) {
+        if (board.isBarrierAt(point)) return false;
+        if (board.isBulletAt(point.getX(),point.getY())) return false;
+        return true;
+    }
+
     List<Direction> getDirectionsWhereISeeEnemies(Point point) {
         long start = System.currentTimeMillis();
         List<Direction> result = new ArrayList<>();
@@ -106,7 +112,7 @@ public class YourSolver implements Solver<Board> {
             Point copy = point.copy();
             copy.change(direction);
             int count = 0;
-            while (!board.isBarrierAt(copy) && count < SCAN_RANGE_ATTACK) {
+            while (isNotBarried(copy) && count < SCAN_RANGE_ATTACK) {
                 if (enemies.contains(copy)) {
                     result.add(direction);
                     break;
