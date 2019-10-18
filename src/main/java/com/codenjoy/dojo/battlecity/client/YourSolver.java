@@ -35,7 +35,6 @@ import com.codenjoy.dojo.services.Direction;
 import com.codenjoy.dojo.services.Point;
 import com.codenjoy.dojo.services.RandomDice;
 import javafx.util.Pair;
-import org.omg.CORBA.TRANSACTION_MODE;
 
 import java.util.*;
 
