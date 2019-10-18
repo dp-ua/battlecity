@@ -38,6 +38,9 @@ import lombok.Getter;
 import java.util.*;
 
 public class BoardState {
+
+
+    public static final int MAX_MOVES_ANALYZE = 30;
     @Getter
     int tick = 0;
     private Basic[][] newState;
@@ -137,6 +140,7 @@ public class BoardState {
         result.put(newState[point.getX()][point.getY()], new Pair<>(Direction.STOP, 0));
 
         boolean newLinkBeenAdded = true;
+        int moveCout=0;
         while (newLinkBeenAdded) {
             newLinkBeenAdded = false;
             Map<Basic, Pair<Direction, Integer>> temp = new HashMap<>();
@@ -165,6 +169,8 @@ public class BoardState {
                     newLinkBeenAdded = true;
                 }
             }
+            moveCout++;
+            if (moveCout> MAX_MOVES_ANALYZE) break;
         }
         return result;
     }
@@ -224,7 +230,7 @@ public class BoardState {
         oldState = newState;
         newState = getState();
         linksAnalize();
-        bulletAnalize();
+//        bulletAnalize();
         tick++;
     }
 

@@ -24,6 +24,7 @@ package com.codenjoy.dojo.battlecity.client;
 
 import com.codenjoy.dojo.battlecity.client.objects.Basic;
 import com.codenjoy.dojo.battlecity.client.objects.action.Destroy;
+import com.codenjoy.dojo.battlecity.client.objects.implement.Enemy;
 import com.codenjoy.dojo.battlecity.model.Elements;
 import com.codenjoy.dojo.client.Solver;
 import com.codenjoy.dojo.client.WebSocketRunner;
@@ -32,6 +33,7 @@ import com.codenjoy.dojo.services.Direction;
 import com.codenjoy.dojo.services.Point;
 import com.codenjoy.dojo.services.RandomDice;
 import javafx.util.Pair;
+import sun.security.krb5.internal.crypto.Des;
 
 import java.util.*;
 
@@ -45,8 +47,9 @@ public class YourSolver implements Solver<Board> {
     private Board board;
     BoardState boardState = new BoardState();
 
-    public static final int SCAN_RANGE_ATTACK = 8;
-    public static final int FREE_MOVES_BEHIND = 3;
+    public static final int SCAN_RANGE_ATTACK = 12;
+    public static final int FREE_MOVES_BEHIND = 6;
+    public static final boolean NO_TARGET_TO_AI = true;
 
     class CacheMap<K, V> extends LinkedHashMap<K, V> {
         private final int capacity;
@@ -85,14 +88,6 @@ public class YourSolver implements Solver<Board> {
         return direction;
     }
 
-    Direction getDirectionOfPoint(Point point) {
-        Elements at = board.getAt(point);
-        int i = at.name().lastIndexOf("_");
-        if (i == -1) return null;
-        String direction = at.name().substring(i + 1);
-        return Direction.valueOf(direction);
-    }
-
     List<Direction> getDirectionsWhereISeeEnemies(Point point) {
         List<Direction> result = new ArrayList<>();
         for (Direction direction : Direction.onlyDirections()) {
@@ -114,9 +109,13 @@ public class YourSolver implements Solver<Board> {
 
     public List<Point> getTargets() {
         List<Point> result = new ArrayList<>();
-        List<Point> enemies = board.getEnemies();
-        for (Point point : enemies) {
+        List<Point> enemiesALL = board.getEnemies();
+        List<Point> enemisWithoutAI = new ArrayList<>();
+        List<Point> whatEnemiesNeedToUse;
+
+        for (Point point : enemiesALL) {
             Basic enemy = boardState.getBasicByPoint(point);
+            if (enemy instanceof Enemy) enemisWithoutAI.add(point);
             Direction enemyDirection = enemy.getDirection();
             Point copyEnemyPoint = point.copy();
             if (Direction.onlyDirections().contains(enemyDirection))
@@ -127,11 +126,10 @@ public class YourSolver implements Solver<Board> {
                     else break;
                 }
         }
-        if (result.contains(board.getMe())) return enemies;
-        else {
-            result.addAll(enemies);
-            return result;
-        }
+        whatEnemiesNeedToUse = NO_TARGET_TO_AI ? enemisWithoutAI : enemiesALL;
+        if (result.contains(board.getMe())) result = whatEnemiesNeedToUse;
+        else result.addAll(whatEnemiesNeedToUse);
+        return result;
     }
 
     List<Point> getSafePointsAround(Point point) {
@@ -168,53 +166,45 @@ public class YourSolver implements Solver<Board> {
             }
         }
         directionForNewMove = getWayToClosestTarget(targets, me);
-        result = (
-                isNeedToShoot(myActiveDirection, directionForNewMove, directionsWhereISeeEnemies, me) ?
-                        "ACT, " : ""
-        )
-                + directionForNewMove.toString();
-
+        System.out.println("Я хочу походить: " + directionForNewMove);
+        result = directionForNewMove.toString() +
+                (isNeedToShoot(directionForNewMove) ? ", ACT" : "");
         return result;
     }
 
-    boolean isNeedShootToDestroy(Direction mySightDirection, Direction directionForNewMove, Point point) {
-        if (!Direction.onlyDirections().contains(mySightDirection)) return false;
-        if (!mySightDirection.equals(directionForNewMove)) return false;
+    int lastShoot = -100;
 
-        Point copy = point.copy();
-        copy.change(mySightDirection);
-        if (board.isOutOfField(copy.getX(), copy.getY())) return false;
-        Basic basicByPoint = boardState.getBasicByPoint(copy);
-        return basicByPoint instanceof Destroy;
+    private String getTestMove() {
+        boolean before = false;
+        Point me = board.getMe();
+        Direction direction = boardState.getBasicByPoint(me).getDirection();
+        String act = direction.clockwise().toString();
+
+        if (boardState.tick - lastShoot > 8) {
+            lastShoot = boardState.tick;
+//            act+=",ACT," + direction.clockwise().clockwise().toString();
+            act = before ? "ACT, " + act : act + ", ACT";
+        }
+        return act;
     }
 
-    private boolean isNeedToShoot(Direction myActiveDirection, Direction
-            directionForNewMove, List<Direction> directionsToTargets, Point me) {
-        if (isNeedShootToDestroy(myActiveDirection, directionForNewMove, me)) {
-            System.out.println("Иду в стену - нужно рушить");
+    boolean isNeedToShoot(Direction whereIWhantToGo) {
+        //new strategy
+        Point me = board.getMe();
+        List<Direction> directionsWhereISeeEnemies = getDirectionsWhereISeeEnemies(me);
+        Basic meBasic = boardState.getBasicByPoint(me);
+        Point copy = me.copy();
+        copy.change(whereIWhantToGo);
+        Basic newPointForMove = boardState.getBasicByPoint(copy);
+        if (directionsWhereISeeEnemies.contains(whereIWhantToGo)) {
+            System.out.println("В направлении моего хода вижу противника. Стреляю");
             return true;
-        } else if (isNeedShootToKillEnemy(directionsToTargets, myActiveDirection)) {
-            System.out.println("Вижу противника - надо стрелять");
+        }
+        if (newPointForMove instanceof Destroy) {
+            System.out.println("Собираюсь идти в стену. Надо рушить.");
             return true;
         }
         return false;
-    }
-
-    private boolean isNeedShootToKillEnemy(List<Direction> directionsToTargets, Direction myDirection) {
-        return (directionsToTargets.contains(myDirection));
-    }
-
-    int lastShoot=-100;
-    private String getTestMove() {
-        boolean before = true;
-        Point me = board.getMe();
-        Basic basicByPoint = boardState.getBasicByPoint(me);
-        String act=basicByPoint.getDirection().clockwise().toString();
-        if (boardState.tick-lastShoot>5) {
-            lastShoot=boardState.tick;
-            act = before ? "ACT, " + act : act+", ACT";
-        }
-        return act;
     }
 
     @Override
@@ -241,7 +231,8 @@ public class YourSolver implements Solver<Board> {
     public static void main(String[] args) {
         WebSocketRunner.runClient(
                 // paste here board page url from browser after registration
-                "http://codenjoy.com/codenjoy-contest/board/player/nj3p5h4t9uzgr0junj52?code=6551112659237526156",
+                "http://dojorena.io/codenjoy-contest/board/player/v0736i3xpu69ffx52y75?code=2352770933751269297",  //batle server
+// test server                "http://codenjoy.com/codenjoy-contest/board/player/nj3p5h4t9uzgr0junj52?code=6551112659237526156",
                 new YourSolver(new RandomDice()),
                 new Board());
     }
