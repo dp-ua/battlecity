@@ -28,6 +28,8 @@ import com.codenjoy.dojo.battlecity.client.objects.action.Attack;
 import com.codenjoy.dojo.battlecity.client.objects.action.Death;
 import com.codenjoy.dojo.battlecity.client.objects.action.Step;
 import com.codenjoy.dojo.battlecity.client.objects.implement.Bullet;
+import com.codenjoy.dojo.battlecity.client.statistic.StatisticComponent;
+import com.codenjoy.dojo.battlecity.client.statistic.StatisticHolder;
 import com.codenjoy.dojo.battlecity.model.Elements;
 import com.codenjoy.dojo.services.Direction;
 import com.codenjoy.dojo.services.Point;
@@ -38,9 +40,10 @@ import lombok.Getter;
 import java.util.*;
 
 public class BoardState {
+    public final int MAX_MOVES_ANALYZE;
 
+    StatisticHolder statisticHolder = StatisticHolder.getInstance();
 
-    public static final int MAX_MOVES_ANALYZE = 30;
     @Getter
     int tick = 0;
     private Basic[][] newState;
@@ -50,7 +53,12 @@ public class BoardState {
     ObjectDetector detector = new ObjectDetector();
     Set<Point> badPoints;
 
+    public BoardState(int max_moves_analyze) {
+        MAX_MOVES_ANALYZE = max_moves_analyze;
+    }
+
     private Basic[][] getState() {
+        long start = System.currentTimeMillis();
         char[][] field = board.getField();
         Basic[][] state = new Basic[field.length][field[0].length];
 
@@ -68,6 +76,8 @@ public class BoardState {
                 }
             }
         }
+        long finish = System.currentTimeMillis();
+        statisticHolder.addOther(new StatisticComponent(start, finish, "boardAnalize: getState"));
         return state;
     }
 
@@ -136,11 +146,12 @@ public class BoardState {
 
 
     public Map<Basic, Pair<Direction, Integer>> getWaysToAllAccessiblePoints(Point point) {
+        long start = System.currentTimeMillis();
         Map<Basic, Pair<Direction, Integer>> result = new HashMap<>();
         result.put(newState[point.getX()][point.getY()], new Pair<>(Direction.STOP, 0));
 
         boolean newLinkBeenAdded = true;
-        int moveCout=0;
+        int moveCout = 0;
         while (newLinkBeenAdded) {
             newLinkBeenAdded = false;
             Map<Basic, Pair<Direction, Integer>> temp = new HashMap<>();
@@ -170,12 +181,16 @@ public class BoardState {
                 }
             }
             moveCout++;
-            if (moveCout> MAX_MOVES_ANALYZE) break;
+            if (moveCout > MAX_MOVES_ANALYZE) break;
         }
+        long finish = System.currentTimeMillis();
+        statisticHolder.addOther(new StatisticComponent(start, finish, "boardAnalize: getWaysToAllAccessiblePoints"));
         return result;
     }
 
     private void linksAnalize() {
+        long start = System.currentTimeMillis();
+
         Point point = new PointImpl(0, 0);
 
         while (true) {
@@ -193,6 +208,8 @@ public class BoardState {
             point = getNextPoint(point);
             if (board.isOutOfField(point.getX(), point.getY())) break;
         }
+        long finish = System.currentTimeMillis();
+        statisticHolder.addOther(new StatisticComponent(start, finish, "boardAnalize: linksAnalize"));
     }
 
     Direction getDirectionByBiasX(int biasX) {
@@ -224,6 +241,7 @@ public class BoardState {
     }
 
     public void analize(Board board) {
+        long start = System.currentTimeMillis();
         oldBoard = this.board;
         this.board = board;
         badPoints = new HashSet<>();
@@ -232,6 +250,8 @@ public class BoardState {
         linksAnalize();
 //        bulletAnalize();
         tick++;
+        long finish = System.currentTimeMillis();
+        statisticHolder.addOther(new StatisticComponent(start, finish, "boardAnalize: mainAnalize"));
     }
 
 

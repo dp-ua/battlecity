@@ -25,6 +25,8 @@ package com.codenjoy.dojo.battlecity.client;
 import com.codenjoy.dojo.battlecity.client.objects.Basic;
 import com.codenjoy.dojo.battlecity.client.objects.action.Destroy;
 import com.codenjoy.dojo.battlecity.client.objects.implement.Enemy;
+import com.codenjoy.dojo.battlecity.client.statistic.StatisticComponent;
+import com.codenjoy.dojo.battlecity.client.statistic.StatisticHolder;
 import com.codenjoy.dojo.battlecity.model.Elements;
 import com.codenjoy.dojo.client.Solver;
 import com.codenjoy.dojo.client.WebSocketRunner;
@@ -33,7 +35,6 @@ import com.codenjoy.dojo.services.Direction;
 import com.codenjoy.dojo.services.Point;
 import com.codenjoy.dojo.services.RandomDice;
 import javafx.util.Pair;
-import sun.security.krb5.internal.crypto.Des;
 
 import java.util.*;
 
@@ -43,13 +44,18 @@ import static com.codenjoy.dojo.services.Direction.STOP;
  * User: your name
  */
 public class YourSolver implements Solver<Board> {
+
+    public int FREE_MOVES_BEHIND = 6;
+    public int SCAN_RANGE_ATTACK = 12;
+    public int MAX_MOVES_ANALIZE = 30;
+    public boolean NO_TARGET_TO_AI = true;
+
+    public int DURATION_EXCESS_STATISTIC = 100;
+
+    StatisticHolder statisticHolder = StatisticHolder.getInstance();
     private Dice dice;
     private Board board;
-    BoardState boardState = new BoardState();
-
-    public static final int SCAN_RANGE_ATTACK = 12;
-    public static final int FREE_MOVES_BEHIND = 6;
-    public static final boolean NO_TARGET_TO_AI = true;
+    BoardState boardState = new BoardState(MAX_MOVES_ANALIZE);
 
     class CacheMap<K, V> extends LinkedHashMap<K, V> {
         private final int capacity;
@@ -66,6 +72,7 @@ public class YourSolver implements Solver<Board> {
     }
 
     private Direction getWayToClosestTarget(List<Point> targets, Point point) {
+        long start = System.currentTimeMillis();
         Direction direction = STOP;
         int moves = Integer.MAX_VALUE;
         Basic finalPoint = null;
@@ -85,10 +92,13 @@ public class YourSolver implements Solver<Board> {
         if (finalPoint != null) {
             System.out.println("I go to: " + finalPoint + " by: " + direction);
         }
+        long finish = System.currentTimeMillis();
+        statisticHolder.addOther(new StatisticComponent(start, finish, "getWayToClosestTarget:" + point));
         return direction;
     }
 
     List<Direction> getDirectionsWhereISeeEnemies(Point point) {
+        long start = System.currentTimeMillis();
         List<Direction> result = new ArrayList<>();
         for (Direction direction : Direction.onlyDirections()) {
             List<Point> enemies = board.getEnemies();
@@ -103,11 +113,14 @@ public class YourSolver implements Solver<Board> {
                 copy.change(direction);
             }
         }
+        long finish = System.currentTimeMillis();
+        statisticHolder.addOther(new StatisticComponent(start, finish, "getDirectionsWhereISeeEnemies from:" + point));
         return result;
     }
 
 
     public List<Point> getTargets() {
+        long start = System.currentTimeMillis();
         List<Point> result = new ArrayList<>();
         List<Point> enemiesALL = board.getEnemies();
         List<Point> enemisWithoutAI = new ArrayList<>();
@@ -129,6 +142,8 @@ public class YourSolver implements Solver<Board> {
         whatEnemiesNeedToUse = NO_TARGET_TO_AI ? enemisWithoutAI : enemiesALL;
         if (result.contains(board.getMe())) result = whatEnemiesNeedToUse;
         else result.addAll(whatEnemiesNeedToUse);
+        long finish = System.currentTimeMillis();
+        statisticHolder.addOther(new StatisticComponent(start, finish, "getTargets"));
         return result;
     }
 
@@ -145,6 +160,7 @@ public class YourSolver implements Solver<Board> {
 
 
     String getNextMove() {
+
         String result = "";
         Point me = board.getMe();
         Basic meBasic = boardState.getBasicByPoint(me);
@@ -209,6 +225,7 @@ public class YourSolver implements Solver<Board> {
 
     @Override
     public String get(Board board) {
+        statisticHolder.clear();
         this.board = board;
         long start = System.currentTimeMillis();
         boardState.analize(board);
@@ -221,23 +238,24 @@ public class YourSolver implements Solver<Board> {
 //            result = getTestMove();
         }
         long finish = System.currentTimeMillis();
-
         System.out.println("Тик:" + boardState.getTick());
-        System.out.println("Время на анализ: " + (finish - start) + "ms");
+        statisticHolder.setMain(new StatisticComponent(start, finish, "main analyzer"));
+        System.out.println(statisticHolder.getStringToShow(DURATION_EXCESS_STATISTIC));
         return result;
     }
 
 
     public static void main(String[] args) {
+        // test server                "http://codenjoy.com/codenjoy-contest/board/player/nj3p5h4t9uzgr0junj52?code=6551112659237526156",
         WebSocketRunner.runClient(
                 // paste here board page url from browser after registration
                 "http://dojorena.io/codenjoy-contest/board/player/v0736i3xpu69ffx52y75?code=2352770933751269297",  //batle server
-// test server                "http://codenjoy.com/codenjoy-contest/board/player/nj3p5h4t9uzgr0junj52?code=6551112659237526156",
                 new YourSolver(new RandomDice()),
                 new Board());
     }
 
     public YourSolver(Dice dice) {
         this.dice = dice;
+
     }
 }
