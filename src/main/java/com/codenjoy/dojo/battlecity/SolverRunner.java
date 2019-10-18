@@ -1,4 +1,4 @@
-package com.codenjoy.dojo.battlecity.client;
+package com.codenjoy.dojo.battlecity;
 
 /*-
  * #%L
@@ -22,6 +22,8 @@ package com.codenjoy.dojo.battlecity.client;
  * #L%
  */
 
+
+import com.codenjoy.dojo.battlecity.client.YourSolver;
 
 /**
  * Created by Oleksandr_Baglai on 2016-10-15.

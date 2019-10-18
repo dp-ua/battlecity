@@ -107,7 +107,7 @@
                     <archive>
                         <manifest>
                             <addClasspath>true</addClasspath>
-                            <mainClass>com.codenjoy.dojo.battlecity.client.SolverRunner</mainClass>
+                            <mainClass>com.codenjoy.dojo.battlecity.SolverRunner</mainClass>
                             <packageName>com.codenjoy.dojo.battlecity</packageName>
                             <addClasspath>true</addClasspath>
                             <classpathPrefix>lib/</classpathPrefix>
@@ -158,7 +158,7 @@
 <!--                    <archive>-->
 <!--                        <manifest>-->
 <!--                            <addClasspath>true</addClasspath>-->
-<!--                            <mainClass>com.codenjoy.dojo.battlecity.client.SolverRunner</mainClass>-->
+<!--                            <mainClass>com.codenjoy.dojo.battlecity.SolverRunner</mainClass>-->
 <!--                            <packageName>com.codenjoy.dojo.battlecity</packageName>-->
 <!--                            <addClasspath>true</addClasspath>-->
 <!--                            <classpathPrefix>lib/</classpathPrefix>-->
