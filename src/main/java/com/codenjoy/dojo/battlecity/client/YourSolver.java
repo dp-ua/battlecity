@@ -35,6 +35,7 @@ import com.codenjoy.dojo.services.Direction;
 import com.codenjoy.dojo.services.Point;
 import com.codenjoy.dojo.services.RandomDice;
 import javafx.util.Pair;
+import org.omg.CORBA.TRANSACTION_MODE;
 
 import java.util.*;
 
@@ -49,6 +50,7 @@ public class YourSolver implements Solver<Board> {
     public int SCAN_RANGE_ATTACK = 12;
     public int MAX_MOVES_ANALIZE = 30;
     public boolean NO_TARGET_TO_AI = true;
+    public boolean IS_SIMPLE_MOD = false;
 
     public int DURATION_EXCESS_STATISTIC = 100;
 
@@ -196,7 +198,7 @@ public class YourSolver implements Solver<Board> {
         Direction direction = boardState.getBasicByPoint(me).getDirection();
         String act = direction.clockwise().toString();
 
-        if (boardState.tick - lastShoot > 8) {
+        if (boardState.tick - lastShoot > 4) {
             lastShoot = boardState.tick;
 //            act+=",ACT," + direction.clockwise().clockwise().toString();
             act = before ? "ACT, " + act : act + ", ACT";
@@ -234,8 +236,7 @@ public class YourSolver implements Solver<Board> {
             System.out.println("Мертвый я :(");
             result = "";
         } else {
-            result = getNextMove();
-//            result = getTestMove();
+            result = IS_SIMPLE_MOD ? getTestMove() : getNextMove();
         }
         long finish = System.currentTimeMillis();
         System.out.println("Тик:" + boardState.getTick());
@@ -246,11 +247,20 @@ public class YourSolver implements Solver<Board> {
 
 
     public static void main(String[] args) {
+        YourSolver yourSolver = new YourSolver(new RandomDice());
+        if (args.length > 0) {
+            for (String arg : args) {
+                if ("simple".equals(args[0].toLowerCase())) {
+                    System.out.println("!!!RUN SIMPLE MOD!!!");
+                    yourSolver.IS_SIMPLE_MOD = true;
+                }
+            }
+        }
         // test server                "http://codenjoy.com/codenjoy-contest/board/player/nj3p5h4t9uzgr0junj52?code=6551112659237526156",
         WebSocketRunner.runClient(
                 // paste here board page url from browser after registration
                 "http://dojorena.io/codenjoy-contest/board/player/v0736i3xpu69ffx52y75?code=2352770933751269297",  //batle server
-                new YourSolver(new RandomDice()),
+                yourSolver,
                 new Board());
     }
 
