@@ -1,4 +1,4 @@
-package com.codenjoy.dojo.battlecity.client;
+package com.codenjoy.dojo.battlecity.client.statistic;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -6,7 +6,7 @@ import lombok.Setter;
 
 @Getter@Setter
 @AllArgsConstructor
-public class Statistic {
+public class StatisticComponent {
     long start;
     long finish;
     String name;
