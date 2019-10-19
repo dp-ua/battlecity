@@ -10,12 +10,12 @@ package com.codenjoy.dojo.battlecity.client.objects.implement;
  * it under the terms of the GNU General Public License as
  * published by the Free Software Foundation, either version 3 of the
  * License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public
  * License along with this program.  If not, see
  * <http://www.gnu.org/licenses/gpl-3.0.html>.
@@ -24,11 +24,10 @@ package com.codenjoy.dojo.battlecity.client.objects.implement;
 
 import com.codenjoy.dojo.battlecity.client.objects.Basic;
 import com.codenjoy.dojo.battlecity.client.objects.action.Attack;
-import com.codenjoy.dojo.battlecity.client.objects.action.Destroy;
 import com.codenjoy.dojo.battlecity.client.objects.action.Step;
 import com.codenjoy.dojo.services.Point;
 
-public class Enemy extends Basic implements Step, Attack{
+public class Enemy extends Basic implements Step, Attack {
     public Enemy(Point point) {
         super(point);
     }
@@ -40,6 +39,20 @@ public class Enemy extends Basic implements Step, Attack{
 
     @Override
     public String toString() {
-        return "Enemy{" +getPoint()+"}";
+        return "Enemy{" + getPoint() + "}";
     }
+
+//    @Override
+//    public List<Point> getBadPoints() {
+//
+//        List<Point> badPoints = super.getBadPoints();
+//
+//        List<Direction> directions = Direction.onlyDirections();
+//        for (Direction direction : directions) {
+//            Point copy = getPoint().copy();
+//            copy.change(direction);
+//            badPoints.add(copy);
+//        }
+//        return badPoints;
+//    }
 }

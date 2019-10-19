@@ -45,11 +45,12 @@ import static com.codenjoy.dojo.services.Direction.STOP;
 /**
  * User: your name
  */
-@Getter@Setter
+@Getter
+@Setter
 public class YourSolver implements Solver<Board> {
 
     public int FREE_MOVES_BEHIND = 6;
-    public int SCAN_RANGE_ATTACK = 16;
+    public int SCAN_RANGE_ATTACK = 12;
     public int MAX_MOVES_ANALIZE = 30;
     public boolean NO_TARGET_TO_AI = true;
     public boolean IS_SIMPLE_MOD = false;
@@ -177,7 +178,7 @@ public class YourSolver implements Solver<Board> {
     }
 
 
-    protected String getMoveAndShootMove() {
+    protected String getMoveAndShoot() {
 
         String result = "";
         Point me = board.getMe();
@@ -200,6 +201,7 @@ public class YourSolver implements Solver<Board> {
             }
         }
         directionForNewMove = getWayToClosestTarget(targets, me);
+
         System.out.println("Я хочу походить: " + directionForNewMove);
         result = directionForNewMove.toString() +
                 (isNeedToShoot(directionForNewMove) ? ", ACT" : "");
@@ -208,18 +210,25 @@ public class YourSolver implements Solver<Board> {
 
 
     protected String getSimpleMove() {
-        boolean before = false;
         Point me = board.getMe();
-        Direction direction = boardState.getBasicByPoint(me).getDirection();
-        Direction newDirection = direction.clockwise();
-        String act = newDirection.toString();
-
-        if (isNeedToShoot(newDirection)) {
-            boardState.lastShoot = boardState.tick;
-//            act+=",ACT," + direction.clockwise().clockwise().toString();
-            act = before ? "ACT, " + act : act + ", ACT";
+        Direction move = STOP;
+        boolean shoot = false;
+        Map<Direction, Integer> directionsWhereISeeEnemies = getDirectionsWhereISeeEnemies(me);
+        if (isIStayOnBadPoint(me)) {
+            Set<Point> freeSafePointsAround = getFreeSafePointsAround(me);
+            Direction wayToClosestTarget = getWayToClosestTarget(new ArrayList<>(freeSafePointsAround), me);
+            move = wayToClosestTarget;
         }
-        return act;
+        if (move != STOP) {
+            if (directionsWhereISeeEnemies.containsKey(move)) shoot = true;
+        } else {
+            for (Map.Entry<Direction, Integer> entry : directionsWhereISeeEnemies.entrySet()) {
+                move = entry.getKey();
+                shoot = true;
+                break;
+            }
+        }
+        return move.toString() + (shoot ? ",ACT" : "");
     }
 
     protected boolean isNeedToShoot(Direction whereIWhantToGo) {
@@ -235,6 +244,10 @@ public class YourSolver implements Solver<Board> {
         }
         if (newPointForMove instanceof Destroy) {
             System.out.println("Собираюсь идти в стену. Надо рушить.");
+            return true;
+        }
+        if (isNearEnemie(me) && whereIWhantToGo != STOP) {
+            System.out.println("SomeOne scout me. Shoot");
             return true;
         }
         return false;
@@ -256,18 +269,18 @@ public class YourSolver implements Solver<Board> {
                     result = getSimpleMove();
                     break;
                 case MOVEANDSHOOT:
-                    result = getMoveAndShootMove();
+                    result = getMoveAndShoot();
                     break;
                 case DEFEND:
                     result = getDefendMove();
                     break;
                 case USUALLY:
                 default:
-                    result = getMoveAndShootMove();
+                    result = getMoveAndShoot();
                     break;
 
             }
-//            result = IS_SIMPLE_MOD ? getSimpleMove() : getMoveAndShootMove();
+//            result = IS_SIMPLE_MOD ? getSimpleMove() : getMoveAndShoot();
         }
         long finish = System.currentTimeMillis();
         System.out.println("Тик:" + boardState.getTick());
@@ -277,29 +290,139 @@ public class YourSolver implements Solver<Board> {
     }
 
     public String getDefendMove() {
-        return "STOP";
+        boolean iNeedRun = false;
+        boolean hasISafePointForMove = false;
+        boolean canSomeOneGoToMyPoint = false;
+        boolean iSeeEnemyFromMyPoint = false;
+
+        Direction moveDirection = STOP;
+        boolean shoot = false;
+
+        Point me = board.getMe();
+        Basic meBasic = boardState.getBasicByPoint(me);
+        Map<Direction, Integer> directionsWhereISeeEnemies = getDirectionsWhereISeeEnemies(me);
+        List<Point> targets = getTargets();
+
+        if (isNearEnemie(me)) canSomeOneGoToMyPoint = true;
+
+        if (isIStayOnBadPoint(me)) {
+            iNeedRun = true;
+        }
+        if (isIHaveFreePointForMove(me)) {
+            hasISafePointForMove = true;
+        }
+
+        if (directionsWhereISeeEnemies.size() > 0) iSeeEnemyFromMyPoint = true;
+
+        if (!iSeeEnemyFromMyPoint && !iNeedRun) {
+            System.out.println("No enemies. Go to Closest target");
+            moveDirection = getWayToClosestTarget(targets, me);
+        } else if (iNeedRun && hasISafePointForMove) {
+            System.out.println("I am in dangerous. Need to run");
+            if (canSomeOneGoToMyPoint) shoot = true;
+            Set<Point> freeSafePointsAround = getFreeSafePointsAround(me);
+            Point bestFreePointForMove = getBestFreePointForMove(freeSafePointsAround);
+            List<Direction> directionsFromPointToPoint = boardState.getDirectionsFromPointToPoint(me, bestFreePointForMove);
+            if (directionsFromPointToPoint.size() == 1) moveDirection = directionsFromPointToPoint.get(0);
+        } else if (!iNeedRun && iSeeEnemyFromMyPoint) {
+            System.out.println("Good position. Need to Shoot");
+            shoot = true;
+            if (!directionsWhereISeeEnemies.containsKey(meBasic.getDirection())) {
+                moveDirection = getDirectionWhereTargetIsCloset(directionsWhereISeeEnemies);
+            }
+        }
+        if (isBarrierOnMyWay(moveDirection, me)) shoot = true;
+
+        return (moveDirection == STOP ? "" : moveDirection.toString()) +
+                (shoot ? ",ACT" : "");
+
+    }
+
+    boolean isBarrierOnMyWay(Direction direction, Point point) {
+        Point copy = point.copy();
+        copy.change(direction);
+        Basic basicByPoint = boardState.getBasicByPoint(copy);
+        return (basicByPoint instanceof Destroy);
+    }
+
+    boolean isNearEnemie(Point point) {
+        List<Point> pointsAround = boardState.getPointsAround(point);
+        for (Point p : pointsAround) {
+            Basic basicByPoint = boardState.getBasicByPoint(p);
+            if (basicByPoint instanceof Enemy) return true;
+
+        }
+        return false;
+    }
+
+    Point getBestFreePointForMove(Set<Point> points) {
+        for (Point point : points) {
+            Map<Direction, Integer> directionsWhereISeeEnemies = getDirectionsWhereISeeEnemies(point);
+            if (directionsWhereISeeEnemies.size() > 0) return point;
+        }
+        for (Point point : points) {
+            return point;
+        }
+        return null;
+    }
+
+    boolean isINeedTurnForShoot(Direction directionForShoot, Point pointFrom) {
+        Basic me = boardState.getBasicByPoint(pointFrom);
+        if (me.getDirection() == STOP) return true;
+        return directionForShoot == me.getDirection();
+    }
+
+    private Direction getDirectionWhereTargetIsCloset(Map<Direction, Integer> directionsWhereISeeEnemies) {
+        Optional<Integer> minRange = directionsWhereISeeEnemies.values().stream().reduce((v1, v2) -> Math.min(v1, v2));
+        if (minRange.isPresent()) {
+            int value = minRange.get();
+            for (Map.Entry<Direction, Integer> entry : directionsWhereISeeEnemies.entrySet()) {
+                if (entry.getValue() == value) return entry.getKey();
+            }
+        }
+        throw new IllegalArgumentException("Cant find min range");
+    }
+
+
+    Set<Point> getFreeSafePointsAround(Point point) {
+        Set<Point> result = new HashSet<>();
+        for (Point p : boardState.getPointsAround(point)) {
+            if (boardState.freePoints.contains(p)) result.add(p);
+        }
+        return result;
+    }
+
+    private boolean isIHaveFreePointForMove(Point point) {
+        Set<Point> freeSafePointsAround = getFreeSafePointsAround(point);
+        return freeSafePointsAround.size() > 0;
+    }
+
+    private boolean isIStayOnBadPoint(Point point) {
+        Set<Point> badPoints = boardState.badPoints;
+        return badPoints.contains(point);
     }
 
     public static void main(String[] args) {
         YourSolver yourSolver = new YourSolver(new RandomDice());
         GameType gameType = GameType.USUALLY;
-        if (args.length == 1) {
-            String arg = args[0];
+        String mainUrl = "http://dojorena.io/codenjoy-contest/board/player/v0736i3xpu69ffx52y75?code=2352770933751269297";
+        if (args.length >= 1) {
+            String type = args[0];
 
             try {
-                int v = Integer.parseInt(arg);
+                int v = Integer.parseInt(type);
                 GameType byInt = GameType.getByInt(v);
                 gameType = byInt;
             } catch (NumberFormatException eN) {
                 try {
-                    GameType byValue = GameType.valueOf(arg);
+                    GameType byValue = GameType.valueOf(type);
                     gameType = byValue;
                 } catch (IllegalArgumentException eI) {
                 }
             }
-
-
         }
+
+
         if (gameType == GameType.HELP) {
             System.out.print("Commands: ");
             for (GameType value : GameType.values()) {
@@ -308,13 +431,17 @@ public class YourSolver implements Solver<Board> {
             return;
         }
 
+        if (args.length == 2) mainUrl = args[1];
         yourSolver.gameType = gameType;
+        if (gameType == GameType.SIMPLE) yourSolver.SCAN_RANGE_ATTACK = 4;
+        System.out.println("URL: " + mainUrl);
         System.out.println("!!!RUN " + gameType.name() + " MOD!!!");
 
 // test server                "http://codenjoy.com/codenjoy-contest/board/player/nj3p5h4t9uzgr0junj52?code=6551112659237526156",
+
         WebSocketRunner.runClient(
                 // paste here board page url from browser after registration
-                "http://dojorena.io/codenjoy-contest/board/player/v0736i3xpu69ffx52y75?code=2352770933751269297",  //batle server
+                mainUrl,  //batle server
                 yourSolver,
                 new Board());
     }

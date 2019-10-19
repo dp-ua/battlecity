@@ -48,7 +48,8 @@ public class BoardState {
 
     @Getter
     int tick = 0;
-    @Getter@Setter
+    @Getter
+    @Setter
     int lastShoot = -100;
     private Basic[][] newState;
     private Basic[][] oldState;
@@ -80,7 +81,7 @@ public class BoardState {
                 if (object instanceof Attack) {
                     badPoints.addAll(object.getBadPoints());
                 }
-                if(object instanceof Free){
+                if (object instanceof Free) {
                     freePoints.add(object.getPoint());
                 }
             }
@@ -116,12 +117,11 @@ public class BoardState {
 
     public List<Point> getPointsAround(Point point) {
         List<Point> result = new ArrayList<>();
-        Direction direction = Direction.UP;
-        for (int i = 0; i < 4; i++) {
+
+        for (Direction direction : Direction.onlyDirections()) {
             Point copy = point.copy();
             copy.change(direction);
             if (!board.isOutOfField(copy.getX(), copy.getY())) result.add(copy);
-            direction = direction.clockwise();
         }
         return result;
     }
@@ -235,7 +235,7 @@ public class BoardState {
         return result;
     }
 
-    private void compareFreeAndBadPoints(){
+    private void compareFreeAndBadPoints() {
         for (Point badPoint : badPoints) {
             if (freePoints.contains(badPoint)) freePoints.remove(badPoint);
         }
