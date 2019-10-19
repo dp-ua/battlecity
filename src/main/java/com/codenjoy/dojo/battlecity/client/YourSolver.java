@@ -35,6 +35,8 @@ import com.codenjoy.dojo.services.Direction;
 import com.codenjoy.dojo.services.Point;
 import com.codenjoy.dojo.services.RandomDice;
 import javafx.util.Pair;
+import lombok.Getter;
+import lombok.Setter;
 
 import java.util.*;
 
@@ -43,6 +45,7 @@ import static com.codenjoy.dojo.services.Direction.STOP;
 /**
  * User: your name
  */
+@Getter@Setter
 public class YourSolver implements Solver<Board> {
 
     public int FREE_MOVES_BEHIND = 6;
@@ -51,12 +54,16 @@ public class YourSolver implements Solver<Board> {
     public boolean NO_TARGET_TO_AI = true;
     public boolean IS_SIMPLE_MOD = false;
 
+    public GameType gameType = GameType.MOVEANDSHOOT;
+
     public int DURATION_EXCESS_STATISTIC = 500;
 
-    StatisticHolder statisticHolder = StatisticHolder.getInstance();
-    private Dice dice;
-    private Board board;
+    protected StatisticHolder statisticHolder = StatisticHolder.getInstance();
+    protected Dice dice;
+    protected Board board;
+
     BoardState boardState = new BoardState(MAX_MOVES_ANALIZE);
+
 
     class CacheMap<K, V> extends LinkedHashMap<K, V> {
         private final int capacity;
@@ -72,7 +79,7 @@ public class YourSolver implements Solver<Board> {
         }
     }
 
-    private Direction getWayToClosestTarget(List<Point> targets, Point point) {
+    protected Direction getWayToClosestTarget(List<Point> targets, Point point) {
         long start = System.currentTimeMillis();
         Direction direction = STOP;
         int moves = Integer.MAX_VALUE;
@@ -98,15 +105,15 @@ public class YourSolver implements Solver<Board> {
         return direction;
     }
 
-    boolean isNotBarried(Point point) {
+    protected boolean isNotBarried(Point point) {
         if (board.isBarrierAt(point)) return false;
-        if (board.isBulletAt(point.getX(),point.getY())) return false;
+        if (board.isBulletAt(point.getX(), point.getY())) return false;
         return true;
     }
 
-    List<Direction> getDirectionsWhereISeeEnemies(Point point) {
+    protected Map<Direction, Integer> getDirectionsWhereISeeEnemies(Point point) {
         long start = System.currentTimeMillis();
-        List<Direction> result = new ArrayList<>();
+        Map<Direction, Integer> result = new HashMap<>();
         Set<Point> enemies = new HashSet<>(board.getEnemies());
         Set<Point> barriers = new HashSet<>(board.getBarriers());
         barriers.addAll(board.getBullets());
@@ -115,9 +122,9 @@ public class YourSolver implements Solver<Board> {
             Point copy = point.copy();
             copy.change(direction);
             int count = 0;
-            while (count < SCAN_RANGE_ATTACK && !barriers.contains(copy) ) {
+            while (count < SCAN_RANGE_ATTACK && !barriers.contains(copy)) {
                 if (enemies.contains(copy)) {
-                    result.add(direction);
+                    result.put(direction, count);
                     break;
                 }
                 count++;
@@ -130,7 +137,7 @@ public class YourSolver implements Solver<Board> {
     }
 
 
-    public List<Point> getTargets() {
+    protected List<Point> getTargets() {
         long start = System.currentTimeMillis();
         List<Point> result = new ArrayList<>();
         List<Point> enemiesALL = board.getEnemies();
@@ -158,7 +165,7 @@ public class YourSolver implements Solver<Board> {
         return result;
     }
 
-    List<Point> getSafePointsAround(Point point) {
+    protected List<Point> getSafePointsAround(Point point) {
         List<Point> result = new ArrayList<>();
         List<Point> enemies = board.getEnemies();
         for (Point p : boardState.getPointsAround(point))
@@ -170,14 +177,14 @@ public class YourSolver implements Solver<Board> {
     }
 
 
-    String getNextMove() {
+    protected String getMoveAndShootMove() {
 
         String result = "";
         Point me = board.getMe();
         Basic meBasic = boardState.getBasicByPoint(me);
         Direction myActiveDirection = meBasic.getDirection();
 
-        List<Direction> directionsWhereISeeEnemies = getDirectionsWhereISeeEnemies(me);
+        Set<Direction> directionsWhereISeeEnemies = getDirectionsWhereISeeEnemies(me).keySet();
         System.out.println("Enemies on:" + Arrays.toString(directionsWhereISeeEnemies.toArray()));
         System.out.println("I look:[" + myActiveDirection.toString() + "]");
 
@@ -199,9 +206,8 @@ public class YourSolver implements Solver<Board> {
         return result;
     }
 
-    int lastShoot = -100;
 
-    private String getSimpleMove() {
+    protected String getSimpleMove() {
         boolean before = false;
         Point me = board.getMe();
         Direction direction = boardState.getBasicByPoint(me).getDirection();
@@ -209,24 +215,23 @@ public class YourSolver implements Solver<Board> {
         String act = newDirection.toString();
 
         if (isNeedToShoot(newDirection)) {
-            lastShoot = boardState.tick;
+            boardState.lastShoot = boardState.tick;
 //            act+=",ACT," + direction.clockwise().clockwise().toString();
             act = before ? "ACT, " + act : act + ", ACT";
         }
         return act;
     }
 
-    boolean isNeedToShoot(Direction whereIWhantToGo) {
+    protected boolean isNeedToShoot(Direction whereIWhantToGo) {
         //new strategy
         Point me = board.getMe();
-        List<Direction> directionsWhereISeeEnemies = getDirectionsWhereISeeEnemies(me);
+        Set<Direction> directionsWhereISeeEnemies = getDirectionsWhereISeeEnemies(me).keySet();
         Basic meBasic = boardState.getBasicByPoint(me);
         Point copy = me.copy();
         copy.change(whereIWhantToGo);
         Basic newPointForMove = boardState.getBasicByPoint(copy);
         if (directionsWhereISeeEnemies.contains(whereIWhantToGo)) {
             System.out.println("В направлении моего хода вижу противника. Стреляю");
-            return true;
         }
         if (newPointForMove instanceof Destroy) {
             System.out.println("Собираюсь идти в стену. Надо рушить.");
@@ -246,7 +251,23 @@ public class YourSolver implements Solver<Board> {
             System.out.println("Мертвый я :(");
             result = "";
         } else {
-            result = IS_SIMPLE_MOD ? getSimpleMove() : getNextMove();
+            switch (gameType) {
+                case SIMPLE:
+                    result = getSimpleMove();
+                    break;
+                case MOVEANDSHOOT:
+                    result = getMoveAndShootMove();
+                    break;
+                case DEFEND:
+                    result = getDefendMove();
+                    break;
+                case USUALLY:
+                default:
+                    result = getMoveAndShootMove();
+                    break;
+
+            }
+//            result = IS_SIMPLE_MOD ? getSimpleMove() : getMoveAndShootMove();
         }
         long finish = System.currentTimeMillis();
         System.out.println("Тик:" + boardState.getTick());
@@ -255,18 +276,42 @@ public class YourSolver implements Solver<Board> {
         return result;
     }
 
+    public String getDefendMove() {
+        return "STOP";
+    }
 
     public static void main(String[] args) {
         YourSolver yourSolver = new YourSolver(new RandomDice());
-        if (args.length > 0) {
-            for (String arg : args) {
-                if ("simple".equals(args[0].toLowerCase())) {
-                    System.out.println("!!!RUN SIMPLE MOD!!!");
-                    yourSolver.IS_SIMPLE_MOD = true;
+        GameType gameType = GameType.USUALLY;
+        if (args.length == 1) {
+            String arg = args[0];
+
+            try {
+                int v = Integer.parseInt(arg);
+                GameType byInt = GameType.getByInt(v);
+                gameType = byInt;
+            } catch (NumberFormatException eN) {
+                try {
+                    GameType byValue = GameType.valueOf(arg);
+                    gameType = byValue;
+                } catch (IllegalArgumentException eI) {
                 }
             }
+
+
         }
-        // test server                "http://codenjoy.com/codenjoy-contest/board/player/nj3p5h4t9uzgr0junj52?code=6551112659237526156",
+        if (gameType == GameType.HELP) {
+            System.out.print("Commands: ");
+            for (GameType value : GameType.values()) {
+                System.out.print(value + " ");
+            }
+            return;
+        }
+
+        yourSolver.gameType = gameType;
+        System.out.println("!!!RUN " + gameType.name() + " MOD!!!");
+
+// test server                "http://codenjoy.com/codenjoy-contest/board/player/nj3p5h4t9uzgr0junj52?code=6551112659237526156",
         WebSocketRunner.runClient(
                 // paste here board page url from browser after registration
                 "http://dojorena.io/codenjoy-contest/board/player/v0736i3xpu69ffx52y75?code=2352770933751269297",  //batle server

@@ -28,6 +28,7 @@ import com.codenjoy.dojo.battlecity.client.objects.action.Attack;
 import com.codenjoy.dojo.battlecity.client.objects.action.Death;
 import com.codenjoy.dojo.battlecity.client.objects.action.Step;
 import com.codenjoy.dojo.battlecity.client.objects.implement.Bullet;
+import com.codenjoy.dojo.battlecity.client.objects.implement.Free;
 import com.codenjoy.dojo.battlecity.client.statistic.StatisticComponent;
 import com.codenjoy.dojo.battlecity.client.statistic.StatisticHolder;
 import com.codenjoy.dojo.battlecity.model.Elements;
@@ -36,6 +37,7 @@ import com.codenjoy.dojo.services.Point;
 import com.codenjoy.dojo.services.PointImpl;
 import javafx.util.Pair;
 import lombok.Getter;
+import lombok.Setter;
 
 import java.util.*;
 
@@ -46,12 +48,15 @@ public class BoardState {
 
     @Getter
     int tick = 0;
+    @Getter@Setter
+    int lastShoot = -100;
     private Basic[][] newState;
     private Basic[][] oldState;
     Board board;
     Board oldBoard;
     ObjectDetector detector = new ObjectDetector();
     Set<Point> badPoints;
+    Set<Point> freePoints;
 
     public BoardState(int max_moves_analyze) {
         MAX_MOVES_ANALYZE = max_moves_analyze;
@@ -68,11 +73,15 @@ public class BoardState {
                 Elements at = board.getAt(i, j);
                 Basic object = detector.getObject(new PointImpl(i, j), Elements.valueOf(c));
                 state[i][j] = object;
+
                 if (object instanceof Death) {
                     badPoints.add(object.getPoint());
                 }
                 if (object instanceof Attack) {
                     badPoints.addAll(object.getBadPoints());
+                }
+                if(object instanceof Free){
+                    freePoints.add(object.getPoint());
                 }
             }
         }
@@ -105,19 +114,6 @@ public class BoardState {
         return result;
     }
 
-    private void bulletAnalize() {
-        if (tick != 0) {
-            long start = System.currentTimeMillis();
-            List<Point> bullets = board.getBullets();
-            List<Point> oldBullets = oldBoard.getBullets();
-
-//        List<Bullet> newBullets = getBulletsList(newState);
-//        List<Bullet> oldBullets = getBulletsList(oldState);
-            long finish = System.currentTimeMillis();
-//            System.out.println("Получали пули: " + (finish - start) + "ms");
-        }
-    }
-
     public List<Point> getPointsAround(Point point) {
         List<Point> result = new ArrayList<>();
         Direction direction = Direction.UP;
@@ -143,7 +139,6 @@ public class BoardState {
         Basic basic = newState[copy.getX()][copy.getY()];
         return basic;
     }
-
 
     public Map<Basic, Pair<Direction, Integer>> getWaysToAllAccessiblePoints(Point point) {
         long start = System.currentTimeMillis();
@@ -240,15 +235,22 @@ public class BoardState {
         return result;
     }
 
+    private void compareFreeAndBadPoints(){
+        for (Point badPoint : badPoints) {
+            if (freePoints.contains(badPoint)) freePoints.remove(badPoint);
+        }
+    }
+
     public void analize(Board board) {
         long start = System.currentTimeMillis();
         oldBoard = this.board;
         this.board = board;
         badPoints = new HashSet<>();
+        freePoints = new HashSet<>();
         oldState = newState;
         newState = getState();
+        compareFreeAndBadPoints();
         linksAnalize();
-//        bulletAnalize();
         tick++;
         long finish = System.currentTimeMillis();
         statisticHolder.addOther(new StatisticComponent(start, finish, "boardAnalize: mainAnalize"));
