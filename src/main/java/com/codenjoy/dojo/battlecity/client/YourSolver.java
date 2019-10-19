@@ -50,7 +50,7 @@ import static com.codenjoy.dojo.services.Direction.STOP;
 public class YourSolver implements Solver<Board> {
 
     public int FREE_MOVES_BEHIND = 6;
-    public int SCAN_RANGE_ATTACK = 12;
+    public int SCAN_RANGE_ATTACK = 8;
     public int MAX_MOVES_ANALIZE = 30;
     public boolean NO_TARGET_TO_AI = true;
     public boolean IS_SIMPLE_MOD = false;
@@ -184,8 +184,9 @@ public class YourSolver implements Solver<Board> {
         Point me = board.getMe();
         Basic meBasic = boardState.getBasicByPoint(me);
         Direction myActiveDirection = meBasic.getDirection();
+        Map<Direction, Integer> directionsWhereISeeEnemiesWithRange = getDirectionsWhereISeeEnemies(me);
 
-        Set<Direction> directionsWhereISeeEnemies = getDirectionsWhereISeeEnemies(me).keySet();
+        Set<Direction> directionsWhereISeeEnemies = directionsWhereISeeEnemiesWithRange.keySet();
         System.out.println("Enemies on:" + Arrays.toString(directionsWhereISeeEnemies.toArray()));
         System.out.println("I look:[" + myActiveDirection.toString() + "]");
 
@@ -193,21 +194,42 @@ public class YourSolver implements Solver<Board> {
         Direction directionForNewMove = STOP;
 
         if (boardState.badPoints.contains(me)) {
-            System.out.println("Плохо стою. Ищу пути отхода");
-            List<Point> safePointsAround = getSafePointsAround(me);
-            if (safePointsAround.size() > 0) {
-                System.out.println("Отход есть. Пытаюсь уйти.");
-                targets = safePointsAround;
+            System.out.println("I Have trouble. Need run");
+            Direction runDirection = getRunDirection(me);
+            if (runDirection != STOP) directionForNewMove = runDirection;
+            else {
+                List<Point> safePointsAround = getSafePointsAround(me);
+                if (safePointsAround.size() > 0) {
+                    System.out.println("Another try find way to run");
+                    targets = safePointsAround;
+                }
             }
         }
-        directionForNewMove = getWayToClosestTarget(targets, me);
+        if (directionForNewMove == STOP) directionForNewMove = getWayToClosestTarget(targets, me);
 
-        System.out.println("Я хочу походить: " + directionForNewMove);
-        result = directionForNewMove.toString() +
+        if (directionsWhereISeeEnemies.size() > 0 && !boardState.badPoints.contains(me)) {
+            Direction needShootDirection = getDirectionWhereTargetIsCloset(directionsWhereISeeEnemiesWithRange);
+            if (meBasic.getDirection() == needShootDirection) result = "ACT";
+            else directionForNewMove = needShootDirection;
+        }
+
+        System.out.println("Want to move: " + directionForNewMove);
+        if ("".equals(result)) result = directionForNewMove.toString() +
                 (isNeedToShoot(directionForNewMove) ? ", ACT" : "");
         return result;
     }
 
+    Direction getRunDirection(Point me) {
+        Direction moveDirection = STOP;
+        if (isIStayOnBadPoint(me) && isIHaveFreePointForMove(me)) {
+            System.out.println("I am in dangerous. Need to run");
+            Set<Point> freeSafePointsAround = getFreeSafePointsAround(me);
+            Point bestFreePointForMove = getBestFreePointForMove(freeSafePointsAround);
+            List<Direction> directionsFromPointToPoint = boardState.getDirectionsFromPointToPoint(me, bestFreePointForMove);
+            if (directionsFromPointToPoint.size() == 1) moveDirection = directionsFromPointToPoint.get(0);
+        }
+        return moveDirection;
+    }
 
     protected String getSimpleMove() {
         Point me = board.getMe();
@@ -231,22 +253,22 @@ public class YourSolver implements Solver<Board> {
         return move.toString() + (shoot ? ",ACT" : "");
     }
 
-    protected boolean isNeedToShoot(Direction whereIWhantToGo) {
+    protected boolean isNeedToShoot(Direction whereIWantToGo) {
         //new strategy
         Point me = board.getMe();
         Set<Direction> directionsWhereISeeEnemies = getDirectionsWhereISeeEnemies(me).keySet();
-        Basic meBasic = boardState.getBasicByPoint(me);
         Point copy = me.copy();
-        copy.change(whereIWhantToGo);
+        copy.change(whereIWantToGo);
         Basic newPointForMove = boardState.getBasicByPoint(copy);
-        if (directionsWhereISeeEnemies.contains(whereIWhantToGo)) {
-            System.out.println("В направлении моего хода вижу противника. Стреляю");
-        }
-        if (newPointForMove instanceof Destroy) {
-            System.out.println("Собираюсь идти в стену. Надо рушить.");
+        if (directionsWhereISeeEnemies.contains(whereIWantToGo)) {
+            System.out.println("See enemy. Shoot");
             return true;
         }
-        if (isNearEnemie(me) && whereIWhantToGo != STOP) {
+        if (newPointForMove instanceof Destroy) {
+            System.out.println("Go to wall. Try to destroy");
+            return true;
+        }
+        if (isNearEnemie(me) && whereIWantToGo != STOP) {
             System.out.println("SomeOne scout me. Shoot");
             return true;
         }
