@@ -33,7 +33,7 @@ public class Bullet extends Basic implements Attack {
 
     @Override
     public int getAttackRange() {
-        return 4;
+        return 3;
     }
 
     @Override

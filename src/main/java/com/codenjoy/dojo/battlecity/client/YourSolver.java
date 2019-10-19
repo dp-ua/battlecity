@@ -49,10 +49,11 @@ import static com.codenjoy.dojo.services.Direction.STOP;
 @Setter
 public class YourSolver implements Solver<Board> {
 
+    public static final int AROUND_ATTACK_POINTS = 3;
     public int FREE_MOVES_BEHIND = 6;
     public int SCAN_RANGE_ATTACK = 8;
     public int MAX_MOVES_ANALIZE = 30;
-    public boolean NO_TARGET_TO_AI = true;
+    public boolean NO_TARGET_TO_AI = false;
     public boolean IS_SIMPLE_MOD = false;
 
     public GameType gameType = GameType.MOVEANDSHOOT;
@@ -157,6 +158,11 @@ public class YourSolver implements Solver<Board> {
                         result.add(copyEnemyPoint.copy());
                     else break;
                 }
+            for (Direction direction : Direction.onlyDirections()) {
+                Point copy = point.copy();
+                for (int i = 0; i < AROUND_ATTACK_POINTS; i++) copy.change(direction);
+                result.add(copy);
+            }
         }
         whatEnemiesNeedToUse = NO_TARGET_TO_AI ? enemisWithoutAI : enemiesALL;
         if (result.contains(board.getMe())) result = whatEnemiesNeedToUse;
@@ -287,6 +293,14 @@ public class YourSolver implements Solver<Board> {
             result = "";
         } else {
             switch (gameType) {
+                case LEFT:
+                    return ("LEFT,ACT");
+                case RIGHT:
+                    return ("RIGHT,ACT");
+                case DOWN:
+                    return ("DOWN,ACT");
+                case UP:
+                    return ("UP,ACT");
                 case SIMPLE:
                     result = getSimpleMove();
                     break;
